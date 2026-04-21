@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saad Haider — IT Professional</title>
+    <meta name="description"
+        content="Saad Haider — IT Professional specializing in Frontend Development, Next.js, React and more. Based in Taxila, Pakistan.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- ══════════════════════════════════════
+         NAVIGATION
+    ═══════════════════════════════════════ -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-left">
+            <div class="nav-logo">
+                <span class="logo-icon">S</span>
+                <span class="logo-text">Saad.</span>
+            </div>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#about" class="nav-link">About</a></li>
+            <li><a href="#experience" class="nav-link">Experience</a></li>
+            <li><a href="#skills" class="nav-link">Skills</a></li>
+            <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+        <a href="#contact" class="nav-cta">Hire Me</a>
+        <!-- Mobile hamburger -->
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-nav" id="mobileNav">
+        <ul>
+            <li><a href="#about" class="mobile-link">About</a></li>
+            <li><a href="#experience" class="mobile-link">Experience</a></li>
+            <li><a href="#skills" class="mobile-link">Skills</a></li>
+            <li><a href="#contact" class="mobile-link">Contact</a></li>
+        </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         HERO SECTION
+    ═══════════════════════════════════════ -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <div class="hero-left">
+                <div class="available-badge">
+                    <span class="available-dot"></span>
+                    Available for Projects
+                </div>
+                <p class="hero-greeting">HELLO, I'M</p>
+                <h1 class="hero-name">Saad<br>Haider<span class="gold-dot">.</span></h1>
+                <p class="hero-role">IT Professional &<br><span class="gold-text typed-text" id="typedText">Frontend Developer</span></p>
+                <p class="hero-desc">Passionate IT professional with extensive experience in frontend development,
+                    web solutions delivery, and modern technology stacks. Based in Taxila, Pakistan.</p>
+                <div class="hero-buttons">
+                    <a href="#portfolio" class="btn-primary">My Work <span>→</span></a>
+                    <a href="#contact" class="btn-secondary">Let's Talk</a>
+                </div>
+            </div>
+            <div class="hero-right">
+                <div class="hero-card">
+                    <div class="hero-stat-badge stat-top-right">
+                        <span class="stat-big">4+</span>
+                        <span class="stat-small">Projects<br>Delivered</span>
+                    </div>
+                    <div class="hero-avatar">
+                        <img src="WhatsApp Image 2025-08-15 at 12.01.40 AM.jpeg" alt="Saad Haider" class="hero-img">
+                    </div>
+                    <div class="hero-stat-badge stat-bottom-left">
+                        <span class="stat-big">3+</span>
+                        <span class="stat-small">Years<br>Experience</span>
+                    </div>
+                    <div class="dot-pattern dot-pattern-1"></div>
+                    <div class="dot-pattern dot-pattern-2"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         STATS BAR
+    ═══════════════════════════════════════ -->
+    <section class="stats-bar">
+        <div class="stats-bar-inner">
+            <div class="stat-item">
+                <span class="stat-number">3+</span>
+                <span class="stat-label">Years of Experience</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">4+</span>
+                <span class="stat-label">Projects Delivered</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">5+</span>
+                <span class="stat-label">Technologies Mastered</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Client Satisfaction</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         ABOUT SECTION
+    ═══════════════════════════════════════ -->
+    <section id="about" class="section about-section">
+        <div class="section-inner">
+            <div class="section-tag"><span class="tag-line"></span> ABOUT ME</div>
+            <h2 class="section-title">Building Digital<br><span class="gold-text">Experiences</span></h2>
+            <div class="about-grid">
+                <div class="about-left">
+                    <p class="about-desc">I'm a passionate IT professional based in Taxila, Pakistan, with a proven
+                        track record in frontend development and modern web solutions.</p>
+                    <p class="about-desc">With over 3 years of diverse experience spanning web development,
+                        React/Next.js applications, and backend integration, I excel at creating responsive,
+                        high-performance websites and applications that deliver real value.</p>
+                    <div class="about-highlights">
+                        <div class="highlight-item">
+                            <span class="highlight-icon">✓</span>
+                            <span>End-to-end web development</span>
+                        </div>
+                        <div class="highlight-item">
+                            <span class="highlight-icon">✓</span>
+                            <span>Modern framework expertise</span>
+                        </div>
+                        <div class="highlight-item">
+                            <span class="highlight-icon">✓</span>
+                            <span>Responsive design implementation</span>
+                        </div>
+                        <div class="highlight-item">
+                            <span class="highlight-icon">✓</span>
+                            <span>Client-focused solutions</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-right">
+                    <div class="quick-info-card">
+                        <h3 class="quick-info-title">Quick Info</h3>
+                        <div class="quick-info-row">
+                            <span class="qi-label">Name</span>
+                            <span class="qi-value">Saad Haider</span>
+                        </div>
+                        <div class="quick-info-row">
+                            <span class="qi-label">Title</span>
+                            <span class="qi-value">IT Professional</span>
+                        </div>
+                        <div class="quick-info-row">
+                            <span class="qi-label">Experience</span>
+                            <span class="qi-value">3+ Years</span>
+                        </div>
+                        <div class="quick-info-row">
+                            <span class="qi-label">Location</span>
+                            <span class="qi-value">Taxila, Pakistan</span>
+                        </div>
+                        <div class="quick-info-row">
+                            <span class="qi-label">Email</span>
+                            <span class="qi-value">xaadhaider55@email.com</span>
+                        </div>
+                        <div class="quick-info-row">
+                            <span class="qi-label">Phone</span>
+                            <span class="qi-value">+92-314-9522678</span>
+                        </div>
+                    </div>
+                    <div class="interests-card">
+                        <h3 class="interests-title">Interests</h3>
+                        <div class="interests-tags">
+                            <span class="interest-tag">Coding</span>
+                            <span class="interest-tag">Reading</span>
+                            <span class="interest-tag">Gaming</span>
+                            <span class="interest-tag">Technology</span>
+                            <span class="interest-tag">Exploring</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SERVICES SECTION
+    ═══════════════════════════════════════ -->
+    <section id="services" class="section services-section">
+        <div class="section-inner">
+            <div class="section-tag"><span class="tag-line"></span> WHAT I DO</div>
+            <h2 class="section-title">Services I<br><span class="gold-text">Offer</span></h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon"><i class="fab fa-html5"></i></div>
+                    <span class="service-num">01</span>
+                    <h3>Frontend Development</h3>
+                    <p>Responsive and interactive web interfaces using HTML, CSS, and JavaScript — pixel-perfect and accessible.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fab fa-react"></i></div>
+                    <span class="service-num">02</span>
+                    <h3>React & Next.js Development</h3>
+                    <p>Modern, scalable web applications with Next.js and React frameworks for top-tier performance.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-database"></i></div>
+                    <span class="service-num">03</span>
+                    <h3>Backend Integration</h3>
+                    <p>Real-time databases and backend services with Supabase and Firebase for powerful data-driven apps.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-search"></i></div>
+                    <span class="service-num">04</span>
+                    <h3>SEO Optimization</h3>
+                    <p>Improving website visibility and ranking through evidence-based SEO strategies and best practices.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         EXPERIENCE SECTION
+    ═══════════════════════════════════════ -->
+    <section id="experience" class="section experience-section">
+        <div class="section-inner">
+            <div class="section-tag"><span class="tag-line"></span> MY JOURNEY</div>
+            <h2 class="section-title">Professional<br><span class="gold-text">Experience</span></h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-dot active"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <div>
+                                <span class="timeline-badge current">CURRENT</span>
+                                <h3 class="timeline-title">IT Professional / Web Developer</h3>
+                                <span class="timeline-company gold-text">Freelance</span>
+                            </div>
+                            <span class="timeline-date">2024 – Present</span>
+                        </div>
+                        <ul class="timeline-details">
+                            <li>Building modern web applications using React, Next.js, and various frontend technologies.</li>
+                            <li>Delivering end-to-end web solutions for clients, from design to deployment.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <div>
+                                <h3 class="timeline-title">Web Development Intern</h3>
+                                <span class="timeline-company gold-text">SkillScore / DEN</span>
+                            </div>
+                            <span class="timeline-date">2023 – 2024</span>
+                        </div>
+                        <ul class="timeline-details">
+                            <li>Completed frontend development certification and internship programs.</li>
+                            <li>Gained hands-on experience with HTML, CSS, JavaScript, and modern frameworks.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SKILLS SECTION
+    ═══════════════════════════════════════ -->
+    <section id="skills" class="section skills-section">
+        <div class="section-inner">
+            <div class="section-tag"><span class="tag-line"></span> EXPERTISE</div>
+            <h2 class="section-title">Skills &<br><span class="gold-text">Technologies</span></h2>
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <div class="skill-icon"><i class="fab fa-html5"></i></div>
+                    <h4>HTML / CSS</h4>
+                    <div class="skill-bar"><div class="skill-fill" data-width="90"></div></div>
+                    <span class="skill-pct">90%</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><i class="fab fa-js-square"></i></div>
+                    <h4>JavaScript</h4>
+                    <div class="skill-bar"><div class="skill-fill" data-width="85"></div></div>
+                    <span class="skill-pct">85%</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><i class="fab fa-react"></i></div>
+                    <h4>React</h4>
+                    <div class="skill-bar"><div class="skill-fill" data-width="85"></div></div>
+                    <span class="skill-pct">85%</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><i class="fas fa-code"></i></div>
+                    <h4>Next.js</h4>
+                    <div class="skill-bar"><div class="skill-fill" data-width="85"></div></div>
+                    <span class="skill-pct">85%</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><i class="fas fa-fire"></i></div>
+                    <h4>Firebase</h4>
+                    <div class="skill-bar"><div class="skill-fill" data-width="88"></div></div>
+                    <span class="skill-pct">88%</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><i class="fas fa-database"></i></div>
+                    <h4>Supabase</h4>
+                    <div class="skill-bar"><div class="skill-fill" data-width="80"></div></div>
+                    <span class="skill-pct">80%</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><i class="fab fa-angular"></i></div>
+                    <h4>Angular</h4>
+                    <div class="skill-bar"><div class="skill-fill" data-width="80"></div></div>
+                    <span class="skill-pct">80%</span>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon"><i class="fas fa-file-excel"></i></div>
+                    <h4>MS Office</h4>
+                    <div class="skill-bar"><div class="skill-fill" data-width="95"></div></div>
+                    <span class="skill-pct">95%</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         PORTFOLIO SECTION
+    ═══════════════════════════════════════ -->
+    <section id="portfolio" class="section portfolio-section">
+        <div class="section-inner">
+            <div class="section-tag"><span class="tag-line"></span> MY WORK</div>
+            <h2 class="section-title">Latest<br><span class="gold-text">Projects</span></h2>
+            <div class="portfolio-grid">
+
+                <div class="portfolio-card">
+                    <div class="portfolio-card-img">
+                        <img src="Screenshot 2025-07-15 192245.png" alt="Web Development Project" loading="lazy">
+                        <a href="https://liftingweights.netlify.app/" target="_blank" rel="noopener"
+                            class="portfolio-overlay">
+                            <span class="overlay-text">View Project ↗</span>
+                        </a>
+                    </div>
+                    <div class="portfolio-card-info">
+                        <div class="portfolio-tags"><span>HTML</span><span>CSS</span><span>JS</span></div>
+                        <h3>Web Development Project</h3>
+                    </div>
+                </div>
+
+                <div class="portfolio-card">
+                    <div class="portfolio-card-img">
+                        <img src="tooo.png" alt="Todo App" loading="lazy">
+                        <a href="https://sparkling-khapse-797248.netlify.app/" target="_blank" rel="noopener"
+                            class="portfolio-overlay">
+                            <span class="overlay-text">View Project ↗</span>
+                        </a>
+                    </div>
+                    <div class="portfolio-card-info">
+                        <div class="portfolio-tags"><span>HTML</span><span>CSS</span><span>JS</span></div>
+                        <h3>Todo App</h3>
+                    </div>
+                </div>
+
+                <div class="portfolio-card">
+                    <div class="portfolio-card-img">
+                        <img src="Screenshot 2025-09-14 161728.png" alt="Weather Website" loading="lazy">
+                        <a href="https://melodic-ganache-a63394.netlify.app/" target="_blank" rel="noopener"
+                            class="portfolio-overlay">
+                            <span class="overlay-text">View Project ↗</span>
+                        </a>
+                    </div>
+                    <div class="portfolio-card-info">
+                        <div class="portfolio-tags"><span>JavaScript</span><span>API</span></div>
+                        <h3>Weather Website</h3>
+                    </div>
+                </div>
+
+                <div class="portfolio-card">
+                    <div class="portfolio-card-img">
+                        <img src="image.png" alt="Solar System Website" loading="lazy">
+                        <a href="https://candid-marzipan-c65ad2.netlify.app/" target="_blank" rel="noopener"
+                            class="portfolio-overlay">
+                            <span class="overlay-text">View Project ↗</span>
+                        </a>
+                    </div>
+                    <div class="portfolio-card-info">
+                        <div class="portfolio-tags"><span>HTML</span><span>CSS</span><span>JS</span></div>
+                        <h3>Solar System Website</h3>
+                    </div>
+                </div>
+
+                <div class="portfolio-card">
+                    <div class="portfolio-card-img">
+                        <img src="blockchain.png" alt="Blockchain Project" loading="lazy">
+                        <a href="https://prop-1-alpha.vercel.app/" target="_blank" rel="noopener"
+                            class="portfolio-overlay">
+                            <span class="overlay-text">View Project ↗</span>
+                        </a>
+                    </div>
+                    <div class="portfolio-card-info">
+                        <div class="portfolio-tags"><span>Next.js</span><span>React</span><span>Web3</span></div>
+                        <h3>Blockchain Project</h3>
+                    </div>
+                </div>
+
+                <div class="portfolio-card">
+                    <div class="portfolio-card-img">
+                        <img src="Screenshot 2026-04-21 072329.jpg" alt="GoGo Anime" loading="lazy">
+                        <a href="https://gogoanime-psi.vercel.app/" target="_blank" rel="noopener"
+                            class="portfolio-overlay">
+                            <span class="overlay-text">View Project ↗</span>
+                        </a>
+                    </div>
+                    <div class="portfolio-card-info">
+                        <div class="portfolio-tags"><span>React</span><span>Laravel</span><span>Vite</span></div>
+                        <h3>GoGo Anime</h3>
+                    </div>
+                </div>
+
+            </div>
+            <div class="portfolio-more">
+                <a href="https://github.com/saadhaider1" target="_blank" rel="noopener" class="btn-secondary">
+                    View All on GitHub →
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         CERTIFICATIONS SECTION
+    ═══════════════════════════════════════ -->
+    <section id="certifications" class="section certifications-section">
+        <div class="section-inner">
+            <div class="section-tag"><span class="tag-line"></span> CREDENTIALS</div>
+            <h2 class="section-title">Certifications &<br><span class="gold-text">Achievements</span></h2>
+            <div class="certs-grid">
+                <div class="cert-card cert-card-clickable">
+                    <div class="cert-card-img">
+                        <img src="Screenshot 2025-09-05 015328.png" alt="Web Development Internship">
+                        <div class="cert-overlay" onclick="openCertModal(event)">
+                            <span class="overlay-text">View Certificate ↗</span>
+                        </div>
+                    </div>
+                    <div class="cert-card-info">
+                        <span class="cert-issuer">SkillScore · 2025</span>
+                        <h3>Web Development Internship</h3>
+                        <p>Frontend Development Certification</p>
+                    </div>
+                </div>
+                <div class="cert-card cert-card-clickable">
+                    <div class="cert-card-img">
+                        <img src="INTERNSHIP.png" alt="Internship Certificate">
+                        <div class="cert-overlay" onclick="openCertModal(event)">
+                            <span class="overlay-text">View Certificate ↗</span>
+                        </div>
+                    </div>
+                    <div class="cert-card-info">
+                        <span class="cert-issuer">DEN · 2025</span>
+                        <h3>Internship Certificate</h3>
+                        <p>Professional Internship Completion</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         CONTACT SECTION
+    ═══════════════════════════════════════ -->
+    <section id="contact" class="section contact-section">
+        <div class="section-inner">
+            <div class="section-tag"><span class="tag-line"></span> GET IN TOUCH</div>
+            <h2 class="section-title">Let's Work<br><span class="gold-text">Together</span></h2>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                        <div>
+                            <span class="contact-label">Email</span>
+                            <a href="mailto:xaadhaider55@email.com" class="contact-value">xaadhaider55@email.com</a>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-phone"></i></div>
+                        <div>
+                            <span class="contact-label">Phone</span>
+                            <a href="tel:+923149522678" class="contact-value">+92 314 952 2678</a>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div>
+                            <span class="contact-label">Location</span>
+                            <span class="contact-value">Taxila, Pakistan</span>
+                        </div>
+                    </div>
+                    <div class="contact-socials">
+                        <a href="https://www.instagram.com/i_xaad678/" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.linkedin.com/in/saad-haider-885667246" target="_blank" rel="noopener"><i class="fab fa-linkedin"></i></a>
+                        <a href="https://github.com/saadhaider1" target="_blank" rel="noopener"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+                <div class="contact-form-wrap">
+                    <form class="contact-form" id="contactForm">
+                        <div class="form-row">
+                            <input type="text" id="cf-name" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-row">
+                            <input type="email" id="cf-email" placeholder="Your Email" required>
+                        </div>
+                        <div class="form-row">
+                            <textarea id="cf-msg" placeholder="Your Message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary form-submit">Send Message <span>↗</span></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         CERTIFICATE MODAL
+    ═══════════════════════════════════════ -->
+    <div class="cert-modal" id="certModal">
+        <div class="cert-modal-overlay" onclick="closeCertModal()"></div>
+        <div class="cert-modal-content">
+            <button class="cert-modal-close" onclick="closeCertModal()">&times;</button>
+            <img id="certModalImg" src="" alt="Certificate" class="cert-modal-img">
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         FOOTER
+    ═══════════════════════════════════════ -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <span>© 2026 Saad Haider. All rights reserved.</span>
+            <a href="#home" class="footer-back">Back to top ↑</a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
