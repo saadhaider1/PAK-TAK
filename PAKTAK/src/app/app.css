@@ -570,3 +570,89 @@ li .bullet { color: var(--military-olive-light); }
   filter: blur(10px);
   pointer-events: none;
 }
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-layout {
+    grid-template-columns: 250px 1fr 250px;
+  }
+  
+  .splash-banner {
+    height: 250px;
+  }
+  
+  .splash-banner .atak-text span {
+    font-size: 3rem;
+  }
+  
+  .brand h1 {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .dashboard-container {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .top-bar {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .system-stats {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .main-layout {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .side-panel {
+    border-right: none !important;
+    border-left: none !important;
+    border-bottom: 2px solid var(--military-olive);
+    height: auto;
+  }
+
+  .map-viewport {
+    min-height: 60vh;
+    border-bottom: 2px solid var(--military-olive);
+  }
+
+  .map-overlay-bottom {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bottom-bar {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .quick-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .splash-brand h1 {
+    font-size: 2rem;
+  }
+  
+  .splash-banner {
+    height: 200px;
+  }
+
+  .splash-banner .atak-text span {
+    font-size: 2.2rem;
+    -webkit-text-stroke: 2px #228B22;
+  }
+}
