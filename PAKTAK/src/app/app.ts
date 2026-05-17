@@ -54,6 +54,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   
   public systemStatusMsg = signal('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.2 GB AVAILABLE');
   public waypointsVisible = false;
+  public interactionMode = signal<'START' | 'HIT'>('HIT');
 
   public missionBriefing = {
     codeName: 'OP-DESERT-FOX',
@@ -145,9 +146,13 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     this.forestShapes.addTo(this.map);
     this.offlineSyncLayer.addTo(this.map);
 
-    // Map click event to set endpoint
+    // Map click event to set start or endpoint based on active mode
     this.map.on('click', (e: L.LeafletMouseEvent) => {
-      this.setEndpoint(e.latlng);
+      if (this.interactionMode() === 'START') {
+        this.setStartpoint(e.latlng);
+      } else {
+        this.setEndpoint(e.latlng);
+      }
     });
   }
 
@@ -200,6 +205,69 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
+  setInteractionMode(mode: 'START' | 'HIT') {
+    this.interactionMode.set(mode);
+    this.systemStatusMsg.set(`INTERACTION MODE CHANGED: SET ${mode === 'START' ? 'START POINT' : 'TARGET POINT'}`);
+    setTimeout(() => this.systemStatusMsg.set('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.2 GB AVAILABLE'), 3000);
+  }
+
+  setStartpoint(latlng: L.LatLng) {
+    this.currentLatNum = latlng.lat;
+    this.currentLngNum = latlng.lng;
+    this.currentLat.set(latlng.lat.toFixed(4) + '° ' + (latlng.lat >= 0 ? 'N' : 'S'));
+    this.currentLng.set(latlng.lng.toFixed(4) + '° ' + (latlng.lng >= 0 ? 'E' : 'W'));
+    this.gpsStatus.set('MANUAL LOCK');
+
+    const popupContent = `
+      <div style="font-family: monospace;">
+        <b style="color: #9acd32">START POSITION LOCKED</b><br>
+        <hr style="border-color: #333; margin: 4px 0;">
+        <b>LAT:</b> ${latlng.lat.toFixed(4)}<br>
+        <b>LNG:</b> ${latlng.lng.toFixed(4)}
+      </div>
+    `;
+
+    if (this.startMarker) {
+      this.startMarker.setLatLng(latlng).setPopupContent(popupContent).openPopup();
+    } else {
+      this.startMarker = L.marker(latlng, { icon: startIcon }).addTo(this.map).bindPopup(popupContent).openPopup();
+    }
+    this.updateRoute();
+  }
+
+  searchLocation(query: string) {
+    if (!query) return;
+    this.systemStatusMsg.set('CONNECTING TO GEOLOCATION DATA SERVICE...');
+    
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          const firstResult = data[0];
+          const lat = parseFloat(firstResult.lat);
+          const lng = parseFloat(firstResult.lon);
+          const latlng = new L.LatLng(lat, lng);
+          
+          this.map.setView(latlng, 14);
+          this.systemStatusMsg.set(`LOCATED: ${firstResult.display_name.toUpperCase().substring(0, 45)}...`);
+          
+          if (this.interactionMode() === 'START') {
+            this.setStartpoint(latlng);
+          } else {
+            this.setEndpoint(latlng);
+          }
+        } else {
+          this.systemStatusMsg.set('ERROR: LOCATION NOT FOUND');
+        }
+        setTimeout(() => this.systemStatusMsg.set('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.2 GB AVAILABLE'), 4000);
+      })
+      .catch(err => {
+        console.error(err);
+        this.systemStatusMsg.set('ERROR: GEOLOCATION SERVICE OFFLINE');
+        setTimeout(() => this.systemStatusMsg.set('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.2 GB AVAILABLE'), 4000);
+      });
+  }
+
   setEndpoint(latlng: L.LatLng) {
     this.targetLat.set(latlng.lat.toFixed(4) + '° ' + (latlng.lat >= 0 ? 'N' : 'S'));
     this.targetLng.set(latlng.lng.toFixed(4) + '° ' + (latlng.lng >= 0 ? 'E' : 'W'));
@@ -237,128 +305,183 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
       this.routes.forEach(route => this.map.removeLayer(route));
       this.routes = [];
 
-      // Calculate distance and bearing for generating curves
-      const latDiff = end.lat - start.lat;
-      const lngDiff = end.lng - start.lng;
-      const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+      this.systemStatusMsg.set('CALCULATING OPTIMAL TACTICAL ROAD ROUTES...');
       
-      // Normal vector
-      const nx = -lngDiff;
-      const ny = latDiff;
+      fetch(`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson&alternatives=true`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.routes && data.routes.length > 0) {
+            data.routes.forEach((routeData: any, index: number) => {
+              const coords = routeData.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
+              
+              let color = '#9acd32';
+              let dashArray = '10, 10';
+              let label = `Road Route ${index + 1} (Viable)`;
+              let weight = 4;
+              
+              if (index === 0) {
+                color = '#00aaff';
+                dashArray = '';
+                label = 'Optimal Road Route';
+                weight = 5;
+              } else if (index === 1) {
+                color = '#ffd700';
+                dashArray = '8, 8';
+                label = 'Alt Flank Road (Moderate)';
+              } else if (index === 2) {
+                color = '#ff4444';
+                dashArray = '5, 5';
+                label = 'Alt Road Path (High Risk)';
+              }
+
+              const roadPolyline = L.polyline(coords, {
+                color: color,
+                weight: weight,
+                opacity: index === 0 ? 0.9 : 0.7,
+                dashArray: dashArray
+              }).bindTooltip(label, { permanent: false, sticky: true }).addTo(this.map);
+              
+              this.routes.push(roadPolyline);
+            });
+            
+            const group = new L.FeatureGroup(this.routes);
+            this.map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 16 });
+
+            this.systemStatusMsg.set('ROAD ROUTING GENERATED. ANALYZING TERRAIN...');
+          } else {
+            this.generateFallbackRoutes(start, end);
+          }
+          
+          this.analyzeTerrainFeatures(start, end);
+        })
+        .catch(err => {
+          console.warn('OSRM routing failed, using direct line fallback:', err);
+          this.generateFallbackRoutes(start, end);
+          this.analyzeTerrainFeatures(start, end);
+        });
+    }
+  }
+
+  generateFallbackRoutes(start: L.LatLng, end: L.LatLng) {
+    const latDiff = end.lat - start.lat;
+    const lngDiff = end.lng - start.lng;
+    const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+    
+    const nx = -lngDiff;
+    const ny = latDiff;
+    
+    const length = Math.sqrt(nx * nx + ny * ny);
+    if (length === 0) return;
+    const normX = nx / length;
+    const normY = ny / length;
+
+    const midLat = (start.lat + end.lat) / 2;
+    const midLng = (start.lng + end.lng) / 2;
+
+    const offset = distance * 0.25;
+
+    const leftFlank = new L.LatLng(midLat + normY * offset, midLng + normX * offset);
+    const rightFlank = new L.LatLng(midLat - normY * offset, midLng - normX * offset);
+
+    const directRoute = L.polyline([start, end], {
+      color: '#ff4444',
+      weight: 3,
+      opacity: 0.8,
+      dashArray: '5, 5'
+    }).bindTooltip('Direct (High Risk)', { permanent: false, sticky: true }).addTo(this.map);
+    
+    const leftRoute = L.polyline([start, leftFlank, end], {
+      color: '#9acd32',
+      weight: 4,
+      opacity: 0.9,
+      dashArray: '10, 10'
+    }).bindTooltip('Left Flank (Viable)', { permanent: false, sticky: true }).addTo(this.map);
+
+    const rightRoute = L.polyline([start, rightFlank, end], {
+      color: '#ffd700',
+      weight: 3,
+      opacity: 0.8,
+      dashArray: '8, 8'
+    }).bindTooltip('Right Flank (Moderate)', { permanent: false, sticky: true }).addTo(this.map);
+
+    this.routes.push(directRoute, leftRoute, rightRoute);
+    
+    const group = new L.FeatureGroup(this.routes);
+    this.map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 16 });
+  }
+
+  analyzeTerrainFeatures(start: L.LatLng, end: L.LatLng) {
+    const latDiff = end.lat - start.lat;
+    const lngDiff = end.lng - start.lng;
+    const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+    
+    const midLat = (start.lat + end.lat) / 2;
+    const midLng = (start.lng + end.lng) / 2;
+
+    const distanceInKm = distance * 111;
+    const elevation = Math.floor(Math.random() * 300) + (distanceInKm * 10);
+    const water = Math.floor(distanceInKm / 5);
+    
+    let density = 'Light';
+    if (distanceInKm > 5) density = 'Moderate';
+    if (distanceInKm > 15) density = 'Heavy';
+
+    this.terrainAnalysis.set({
+      forestDensity: density,
+      elevationGain: `+${elevation.toFixed(0)}m`,
+      waterObstacles: water > 0 ? `${water} Minor` : 'None'
+    });
+
+    this.forestShapes.clearLayers();
+    const numForests = density === 'Heavy' ? 6 : density === 'Moderate' ? 3 : 1;
+    
+    for (let i = 0; i < numForests; i++) {
+      const randLat = midLat + (Math.random() - 0.5) * distance * 0.5;
+      const randLng = midLng + (Math.random() - 0.5) * distance * 0.5;
       
-      // Normalize
-      const length = Math.sqrt(nx * nx + ny * ny);
-      const normX = nx / length;
-      const normY = ny / length;
+      const radius = 250 + Math.random() * 500;
+      const forestLength = (radius * 2 / 1000).toFixed(2);
+      const threats = ['LOW', 'MODERATE', 'ELEVATED', 'HIGH'];
+      const threatLevel = threats[Math.floor(Math.random() * threats.length)];
 
-      const midLat = (start.lat + end.lat) / 2;
-      const midLng = (start.lng + end.lng) / 2;
-
-      // Offset factor based on distance
-      const offset = distance * 0.25;
-
-      // Waypoints for flanking routes
-      const leftFlank = new L.LatLng(midLat + normY * offset, midLng + normX * offset);
-      const rightFlank = new L.LatLng(midLat - normY * offset, midLng - normX * offset);
-
-      // Route 1: Direct approach (highest risk/hurdles)
-      const directRoute = L.polyline([start, end], {
-        color: '#ff4444', // Red for direct/high risk
-        weight: 3,
-        opacity: 0.8,
-        dashArray: '5, 5'
-      }).bindTooltip('Direct (High Risk)', { permanent: false, sticky: true }).addTo(this.map);
+      const tooltipContent = `
+        <div style="font-family: monospace;">
+          <b>Detected Forest Zone</b><br>
+          <b>Span:</b> ~${forestLength} km<br>
+          <b>Threat Level:</b> <span style="color: ${threatLevel === 'HIGH' || threatLevel === 'ELEVATED' ? '#ff4444' : '#9acd32'}">${threatLevel}</span>
+        </div>
+      `;
       
-      // Route 2: Left Flank
-      const leftRoute = L.polyline([start, leftFlank, end], {
-        color: '#9acd32', // Green for viable/safe
-        weight: 4,
-        opacity: 0.9,
-        dashArray: '10, 10'
-      }).bindTooltip('Left Flank (Viable)', { permanent: false, sticky: true }).addTo(this.map);
+      L.circle([randLat, randLng], {
+        color: '#228B22',
+        fillColor: '#228B22',
+        fillOpacity: 0.4,
+        radius: radius
+      }).bindTooltip(tooltipContent, { permanent: false, direction: 'top' }).addTo(this.forestShapes);
+    }
 
-      // Route 3: Right Flank
-      const rightRoute = L.polyline([start, rightFlank, end], {
-        color: '#ffd700', // Yellow for moderate
-        weight: 3,
-        opacity: 0.8,
-        dashArray: '8, 8'
-      }).bindTooltip('Right Flank (Moderate)', { permanent: false, sticky: true }).addTo(this.map);
+    this.waterObstaclesShapes.clearLayers();
+    if (water > 0) {
+      for (let i = 0; i < water; i++) {
+        const wLat = midLat + (Math.random() - 0.5) * distance * 0.4;
+        const wLng = midLng + (Math.random() - 0.5) * distance * 0.4;
 
-      this.routes.push(directRoute, leftRoute, rightRoute);
-      
-      // Fit bounds to show all routes
-      const group = new L.FeatureGroup(this.routes);
-      this.map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 16 });
+        const waterPoly = L.polygon([
+          [wLat - 0.002, wLng - 0.002],
+          [wLat + 0.002, wLng - 0.001],
+          [wLat + 0.001, wLng + 0.003],
+          [wLat - 0.001, wLng + 0.002]
+        ], {
+          color: '#00aaff',
+          fillColor: '#00aaff',
+          fillOpacity: 0.5
+        }).addTo(this.waterObstaclesShapes);
 
-      // Dynamic Terrain Analysis based on route
-      const distanceInKm = distance * 111; // Rough distance estimation
-      const elevation = Math.floor(Math.random() * 300) + (distanceInKm * 10);
-      const water = Math.floor(distanceInKm / 5);
-      
-      let density = 'Light';
-      if (distanceInKm > 5) density = 'Moderate';
-      if (distanceInKm > 15) density = 'Heavy';
+        const width = Math.floor(Math.random() * 50) + 20;
+        const length = Math.floor(Math.random() * 200) + 100;
+        const depth = (Math.random() * 5 + 1).toFixed(1);
 
-      this.terrainAnalysis.set({
-        forestDensity: density,
-        elevationGain: `+${elevation.toFixed(0)}m`,
-        waterObstacles: water > 0 ? `${water} Minor` : 'None'
-      });
-
-      // Automatically render detected forest zones to visualize density
-      this.forestShapes.clearLayers();
-      const numForests = density === 'Heavy' ? 6 : density === 'Moderate' ? 3 : 1;
-      
-      for (let i = 0; i < numForests; i++) {
-        const randLat = midLat + (Math.random() - 0.5) * distance * 0.5;
-        const randLng = midLng + (Math.random() - 0.5) * distance * 0.5;
-        
-        const radius = 250 + Math.random() * 500;
-        const forestLength = (radius * 2 / 1000).toFixed(2);
-        const threats = ['LOW', 'MODERATE', 'ELEVATED', 'HIGH'];
-        const threatLevel = threats[Math.floor(Math.random() * threats.length)];
-
-        const tooltipContent = `
-          <div style="font-family: monospace;">
-            <b>Detected Forest Zone</b><br>
-            <b>Span:</b> ~${forestLength} km<br>
-            <b>Threat Level:</b> <span style="color: ${threatLevel === 'HIGH' || threatLevel === 'ELEVATED' ? '#ff4444' : '#9acd32'}">${threatLevel}</span>
-          </div>
-        `;
-        
-        L.circle([randLat, randLng], {
-          color: '#228B22',
-          fillColor: '#228B22',
-          fillOpacity: 0.4,
-          radius: radius
-        }).bindTooltip(tooltipContent, { permanent: false, direction: 'top' }).addTo(this.forestShapes);
-      }
-
-      // Automatically render water obstacles
-      this.waterObstaclesShapes.clearLayers();
-      if (water > 0) {
-        for (let i = 0; i < water; i++) {
-          const wLat = midLat + (Math.random() - 0.5) * distance * 0.4;
-          const wLng = midLng + (Math.random() - 0.5) * distance * 0.4;
-
-          const waterPoly = L.polygon([
-            [wLat - 0.002, wLng - 0.002],
-            [wLat + 0.002, wLng - 0.001],
-            [wLat + 0.001, wLng + 0.003],
-            [wLat - 0.001, wLng + 0.002]
-          ], {
-            color: '#00aaff',
-            fillColor: '#00aaff',
-            fillOpacity: 0.5
-          }).addTo(this.waterObstaclesShapes);
-
-          const width = Math.floor(Math.random() * 50) + 20;
-          const length = Math.floor(Math.random() * 200) + 100;
-          const depth = (Math.random() * 5 + 1).toFixed(1);
-
-          waterPoly.bindPopup(`<b>Water Obstacle Detected</b><br>Dimensions: ${length}m x ${width}m<br>Est. Depth: ${depth}m`);
-        }
+        waterPoly.bindPopup(`<b>Water Obstacle Detected</b><br>Dimensions: ${length}m x ${width}m<br>Est. Depth: ${depth}m`);
       }
     }
   }

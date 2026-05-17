@@ -571,6 +571,94 @@ li .bullet { color: var(--military-olive-light); }
   pointer-events: none;
 }
 
+/* Search Bar & Interaction Modes styling */
+.map-search-bar-container {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  z-index: 1001; /* Must sit above Leaflet pane controls (1000) */
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+
+.search-input-wrapper {
+  display: flex;
+  flex: 1;
+  min-width: 250px;
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.search-input-wrapper input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 10px 15px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.search-input-wrapper button {
+  background: var(--military-olive-dark);
+  border: none;
+  border-left: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-input-wrapper button:hover {
+  background: var(--military-olive);
+  color: var(--accent-green);
+}
+
+.mode-toggle-group {
+  display: flex;
+  gap: 5px;
+  background: rgba(10, 10, 10, 0.9);
+  padding: 3px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.toggle-mode-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 3px;
+}
+
+.toggle-mode-btn.active.start-mode {
+  background: rgba(34, 139, 34, 0.25);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  box-shadow: 0 0 8px rgba(154, 205, 50, 0.4);
+}
+
+.toggle-mode-btn.active.hit-mode {
+  background: rgba(255, 68, 68, 0.25);
+  border-color: #ff4444;
+  color: #ff4444;
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.4);
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .main-layout {
