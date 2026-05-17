@@ -328,62 +328,141 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
           if (data && data.routes && data.routes.length > 0) {
             const newOptions: any[] = [];
             
-            data.routes.forEach((routeData: any, index: number) => {
-              const coords = routeData.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
-              
-              let color = '#9acd32';
-              let dashArray = '10, 10';
-              let name = `Option ${String.fromCharCode(65 + index)} (Alt Flank)`;
-              let badgeText = 'ALTERNATIVE';
-              let badgeColor = '#ffd700';
-              let weight = 3;
-              let opacity = 0.55;
-              let threat = 'MODERATE';
-              let threatColor = '#ffd700';
-              
-              if (index === 0) {
-                color = '#00aaff';
-                dashArray = '';
-                name = 'Option A (Optimal)';
-                badgeText = 'OPTIMAL';
-                badgeColor = '#00aaff';
-                weight = 6;
-                opacity = 0.95;
-                threat = 'LOW';
-                threatColor = '#9acd32';
-              } else if (index === 2) {
-                color = '#ff4444';
-                dashArray = '5, 5';
-                name = 'Option C (High Danger)';
-                badgeText = 'HIGH RISK';
-                badgeColor = '#ff4444';
-                threat = 'HIGH';
-                threatColor = '#ff4444';
-              }
+            // 1. Draw Option A (Optimal) - always from OSRM route 0
+            const mainRoute = data.routes[0];
+            const mainCoords = mainRoute.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
+            
+            const roadPolyline = L.polyline(mainCoords, {
+              color: '#00aaff',
+              weight: 6,
+              opacity: 0.95,
+              dashArray: ''
+            }).bindTooltip('Option A (Optimal)', { permanent: false, sticky: true }).addTo(this.map);
+            
+            this.routes.push(roadPolyline);
+            
+            const distanceKm = (mainRoute.distance / 1000).toFixed(1) + ' km';
+            const durationMin = Math.round(mainRoute.duration / 60) + ' min';
 
-              const roadPolyline = L.polyline(coords, {
-                color: color,
-                weight: weight,
-                opacity: opacity,
-                dashArray: dashArray
-              }).bindTooltip(name, { permanent: false, sticky: true }).addTo(this.map);
-              
-              this.routes.push(roadPolyline);
-
-              // Calculate metrics
-              const distanceKm = (routeData.distance / 1000).toFixed(1) + ' km';
-              const durationMin = Math.round(routeData.duration / 60) + ' min';
-
-              newOptions.push({
-                name: name,
-                badgeText: badgeText,
-                badgeColor: badgeColor,
-                distance: distanceKm,
-                eta: durationMin,
-                threat: threat,
-                threatColor: threatColor
-              });
+            newOptions.push({
+              name: 'Option A (Optimal)',
+              badgeText: 'OPTIMAL',
+              badgeColor: '#00aaff',
+              distance: distanceKm,
+              eta: durationMin,
+              threat: 'LOW',
+              threatColor: '#9acd32'
             });
+
+            // 2. Do we have OSRM alternatives?
+            if (data.routes.length >= 3) {
+              // Use OSRM returned alternative routes for Option B and Option C
+              for (let index = 1; index <= 2; index++) {
+                const routeData = data.routes[index];
+                const coords = routeData.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
+                
+                let color = '#9acd32';
+                let dashArray = '10, 10';
+                let name = `Option ${String.fromCharCode(65 + index)} (Alt Flank)`;
+                let badgeText = 'ALTERNATIVE';
+                let badgeColor = '#ffd700';
+                let threat = 'MODERATE';
+                let threatColor = '#ffd700';
+                
+                if (index === 2) {
+                  color = '#ff4444';
+                  dashArray = '5, 5';
+                  name = 'Option C (High Danger)';
+                  badgeText = 'HIGH RISK';
+                  badgeColor = '#ff4444';
+                  threat = 'HIGH';
+                  threatColor = '#ff4444';
+                }
+
+                const altPolyline = L.polyline(coords, {
+                  color: color,
+                  weight: 3,
+                  opacity: 0.35,
+                  dashArray: dashArray
+                }).bindTooltip(name, { permanent: false, sticky: true }).addTo(this.map);
+                
+                this.routes.push(altPolyline);
+
+                const altDistKm = (routeData.distance / 1000).toFixed(1) + ' km';
+                const altDurationMin = Math.round(routeData.duration / 60) + ' min';
+
+                newOptions.push({
+                  name: name,
+                  badgeText: badgeText,
+                  badgeColor: badgeColor,
+                  distance: altDistKm,
+                  eta: altDurationMin,
+                  threat: threat,
+                  threatColor: threatColor
+                });
+              }
+            } else {
+              // Synthesize tactical flank curves for Option B and Option C relative to the endpoints
+              const latDiff = end.lat - start.lat;
+              const lngDiff = end.lng - start.lng;
+              const distanceVal = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+              
+              const nx = -lngDiff;
+              const ny = latDiff;
+              const length = Math.sqrt(nx * nx + ny * ny);
+              
+              if (length > 0) {
+                const normX = nx / length;
+                const normY = ny / length;
+                const midLat = (start.lat + end.lat) / 2;
+                const midLng = (start.lng + end.lng) / 2;
+                const offset = distanceVal * 0.22;
+
+                const leftFlank = new L.LatLng(midLat + normY * offset, midLng + normX * offset);
+                const rightFlank = new L.LatLng(midLat - normY * offset, midLng - normX * offset);
+
+                // Option B (Left Flank)
+                const leftRoute = L.polyline([start, leftFlank, end], {
+                  color: '#9acd32',
+                  weight: 3,
+                  opacity: 0.35,
+                  dashArray: '10, 10'
+                }).bindTooltip('Option B (Left Flank)', { permanent: false, sticky: true }).addTo(this.map);
+                this.routes.push(leftRoute);
+
+                // Option C (Right Flank / High Danger)
+                const rightRoute = L.polyline([start, rightFlank, end], {
+                  color: '#ff4444',
+                  weight: 3,
+                  opacity: 0.35,
+                  dashArray: '5, 5'
+                }).bindTooltip('Option C (High Danger)', { permanent: false, sticky: true }).addTo(this.map);
+                this.routes.push(rightRoute);
+
+                const baseDistance = parseFloat(distanceKm);
+                const baseDuration = Math.round(mainRoute.duration / 60);
+
+                newOptions.push({
+                  name: 'Option B (Left Flank)',
+                  badgeText: 'ALTERNATIVE',
+                  badgeColor: '#ffd700',
+                  distance: (baseDistance * 1.25).toFixed(1) + ' km',
+                  eta: Math.round(baseDuration * 1.2) + ' min',
+                  threat: 'MODERATE',
+                  threatColor: '#ffd700'
+                });
+
+                newOptions.push({
+                  name: 'Option C (High Danger)',
+                  badgeText: 'HIGH RISK',
+                  badgeColor: '#ff4444',
+                  distance: (baseDistance * 1.35).toFixed(1) + ' km',
+                  eta: Math.round(baseDuration * 1.4) + ' min',
+                  threat: 'HIGH',
+                  threatColor: '#ff4444'
+                });
+              }
+            }
 
             this.routeOptions.set(newOptions);
             this.selectedRouteIndex.set(0);
