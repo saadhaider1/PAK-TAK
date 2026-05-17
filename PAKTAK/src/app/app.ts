@@ -1,6 +1,5 @@
 import { Component, signal, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
 import * as L from 'leaflet';
 
 const startIcon = L.icon({
@@ -24,7 +23,7 @@ const endIcon = L.icon({
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -79,6 +78,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   });
 
   private timeInterval: any;
+  private watchId?: number;
 
   ngOnInit() {
     this.updateTime();
@@ -97,6 +97,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnDestroy() {
     if (this.timeInterval) clearInterval(this.timeInterval);
+    if (this.watchId !== undefined) navigator.geolocation.clearWatch(this.watchId);
     if (this.map) this.map.remove();
   }
 
@@ -181,7 +182,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
       );
       
       // Watch position for continuous updates
-      navigator.geolocation.watchPosition((position) => {
+      this.watchId = navigator.geolocation.watchPosition((position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
           this.currentLatNum = lat;
