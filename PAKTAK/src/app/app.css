@@ -571,7 +571,7 @@ li .bullet { color: var(--military-olive-light); }
   pointer-events: none;
 }
 
-/* Search Bar & Interaction Modes styling (Premium Glassmorphism) */
+/* Search Bar & Interaction Modes styling (Premium Collapsible Glassmorphism) */
 .map-search-bar-container {
   position: absolute;
   top: 15px;
@@ -581,70 +581,112 @@ li .bullet { color: var(--military-olive-light); }
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  pointer-events: auto;
+  pointer-events: none; /* Let clicks pass through container gaps */
 }
 
 .search-input-wrapper {
   display: flex;
-  flex: 1;
-  min-width: 250px;
-  background: rgba(10, 15, 10, 0.45); /* Sleek semi-transparent dark olive glass */
+  flex-direction: row; /* Button first, then text box */
+  align-items: center;
+  width: 44px;
+  max-width: 44px;
+  height: 44px;
+  background: rgba(10, 15, 10, 0.5); /* Sleek semi-transparent dark olive glass */
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
-  border: 1px solid rgba(154, 205, 50, 0.3); /* Subtle green glass border */
-  border-radius: 8px; /* Smooth rounded corners */
+  border: 1px solid rgba(154, 205, 50, 0.35); /* Subtle green glass border */
+  border-radius: 22px; /* Perfectly round collapsed circle */
   overflow: hidden;
   box-shadow: 
     inset 0 1px 1px rgba(255, 255, 255, 0.05),
     0 8px 32px 0 rgba(0, 0, 0, 0.4);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  pointer-events: auto;
+  cursor: pointer;
 }
 
+.search-input-wrapper:hover,
 .search-input-wrapper:focus-within {
+  width: 320px;
+  max-width: 320px;
+  border-radius: 8px; /* Smoothly stretch to rounded rectangle */
   border-color: var(--accent-green);
   box-shadow: 
     0 0 15px rgba(154, 205, 50, 0.35),
     inset 0 1px 2px rgba(255, 255, 255, 0.1),
     0 8px 32px 0 rgba(0, 0, 0, 0.5);
-  transform: translateY(-1px);
+}
+
+.search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  flex-shrink: 0;
+}
+
+.search-input-wrapper:hover .search-btn,
+.search-input-wrapper:focus-within .search-btn {
+  border-right: 1px solid rgba(154, 205, 50, 0.3);
+  background: rgba(85, 107, 47, 0.45);
+  width: auto;
+  padding: 0 16px;
+}
+
+.search-svg {
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.search-btn:hover .search-svg {
+  color: var(--accent-green);
+  filter: drop-shadow(0 0 4px rgba(154, 205, 50, 0.6));
+}
+
+.btn-text {
+  display: none;
+  margin-left: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.search-input-wrapper:hover .btn-text,
+.search-input-wrapper:focus-within .btn-text {
+  display: inline;
 }
 
 .search-input-wrapper input {
   flex: 1;
+  width: 0;
+  opacity: 0;
+  padding: 0;
   background: transparent;
   border: none;
   color: #ffffff;
-  padding: 10px 16px;
   font-family: 'Roboto Mono', monospace;
   font-size: 0.85rem;
   outline: none;
-  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.search-input-wrapper:hover input,
+.search-input-wrapper:focus-within input {
+  width: auto;
+  opacity: 1;
+  padding: 10px 16px;
 }
 
 .search-input-wrapper input::placeholder {
   color: rgba(220, 220, 220, 0.5);
-}
-
-.search-input-wrapper button {
-  background: rgba(85, 107, 47, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: none;
-  border-left: 1px solid rgba(154, 205, 50, 0.3);
-  color: var(--text-primary);
-  padding: 0 22px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 1px;
-}
-
-.search-input-wrapper button:hover {
-  background: rgba(154, 205, 50, 0.3);
-  color: var(--accent-green);
-  text-shadow: 0 0 5px rgba(154, 205, 50, 0.5);
 }
 
 .mode-toggle-group {
@@ -659,6 +701,7 @@ li .bullet { color: var(--military-olive-light); }
   box-shadow: 
     inset 0 1px 1px rgba(255, 255, 255, 0.05),
     0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
 }
 
 .toggle-mode-btn {
@@ -694,6 +737,96 @@ li .bullet { color: var(--military-olive-light); }
   color: #ff5555;
   box-shadow: 0 0 10px rgba(255, 68, 68, 0.4);
   text-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+}
+
+/* Route Option Cards styling */
+.route-options-panel {
+  margin-top: 15px;
+  border-top: 1px dashed rgba(85, 107, 47, 0.4);
+  padding-top: 15px;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.route-options-panel h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  color: var(--accent-green);
+  margin-bottom: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-shadow: 0 0 5px rgba(154, 205, 50, 0.3);
+}
+
+.route-option-card {
+  background: rgba(10, 15, 10, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(85, 107, 47, 0.3);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.route-option-card:hover {
+  border-color: rgba(154, 205, 50, 0.5);
+  background: rgba(10, 15, 10, 0.55);
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.route-option-card.active {
+  border-color: var(--accent-green);
+  background: rgba(34, 139, 34, 0.12);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.05),
+    0 0 10px rgba(154, 205, 50, 0.25);
+}
+
+.opt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.opt-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.opt-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #000000;
+  font-weight: 800;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.opt-details {
+  display: flex;
+  gap: 14px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.opt-details .stat {
+  display: flex;
+  gap: 4px;
+}
+
+.opt-details .stat span {
+  color: rgba(220, 220, 220, 0.6);
+}
+
+.opt-details .stat b {
+  color: #ffffff;
 }
 
 /* Responsive Design */

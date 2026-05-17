@@ -55,6 +55,8 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   public systemStatusMsg = signal('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.2 GB AVAILABLE');
   public waypointsVisible = false;
   public interactionMode = signal<'START' | 'HIT'>('HIT');
+  public routeOptions = signal<any[]>([]);
+  public selectedRouteIndex = signal<number>(0);
 
   public missionBriefing = {
     codeName: 'OP-DESERT-FOX',
@@ -205,6 +207,19 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
+  selectRouteOption(idx: number) {
+    this.selectedRouteIndex.set(idx);
+    this.routes.forEach((polyline, index) => {
+      if (index === idx) {
+        polyline.setStyle({ weight: 6, opacity: 0.95 });
+        polyline.bringToFront();
+      } else {
+        polyline.setStyle({ weight: 3, opacity: 0.35 });
+      }
+    });
+    this.systemStatusMsg.set(`TACTICAL PATH MODIFIED: SELECTED OPTION ${String.fromCharCode(65 + idx)}`);
+  }
+
   setInteractionMode(mode: 'START' | 'HIT') {
     this.interactionMode.set(mode);
     this.systemStatusMsg.set(`INTERACTION MODE CHANGED: SET ${mode === 'START' ? 'START POINT' : 'TARGET POINT'}`);
@@ -311,43 +326,72 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
         .then(res => res.json())
         .then(data => {
           if (data && data.routes && data.routes.length > 0) {
+            const newOptions: any[] = [];
+            
             data.routes.forEach((routeData: any, index: number) => {
               const coords = routeData.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
               
               let color = '#9acd32';
               let dashArray = '10, 10';
-              let label = `Road Route ${index + 1} (Viable)`;
-              let weight = 4;
+              let name = `Option ${String.fromCharCode(65 + index)} (Alt Flank)`;
+              let badgeText = 'ALTERNATIVE';
+              let badgeColor = '#ffd700';
+              let weight = 3;
+              let opacity = 0.55;
+              let threat = 'MODERATE';
+              let threatColor = '#ffd700';
               
               if (index === 0) {
                 color = '#00aaff';
                 dashArray = '';
-                label = 'Optimal Road Route';
-                weight = 5;
-              } else if (index === 1) {
-                color = '#ffd700';
-                dashArray = '8, 8';
-                label = 'Alt Flank Road (Moderate)';
+                name = 'Option A (Optimal)';
+                badgeText = 'OPTIMAL';
+                badgeColor = '#00aaff';
+                weight = 6;
+                opacity = 0.95;
+                threat = 'LOW';
+                threatColor = '#9acd32';
               } else if (index === 2) {
                 color = '#ff4444';
                 dashArray = '5, 5';
-                label = 'Alt Road Path (High Risk)';
+                name = 'Option C (High Danger)';
+                badgeText = 'HIGH RISK';
+                badgeColor = '#ff4444';
+                threat = 'HIGH';
+                threatColor = '#ff4444';
               }
 
               const roadPolyline = L.polyline(coords, {
                 color: color,
                 weight: weight,
-                opacity: index === 0 ? 0.9 : 0.7,
+                opacity: opacity,
                 dashArray: dashArray
-              }).bindTooltip(label, { permanent: false, sticky: true }).addTo(this.map);
+              }).bindTooltip(name, { permanent: false, sticky: true }).addTo(this.map);
               
               this.routes.push(roadPolyline);
+
+              // Calculate metrics
+              const distanceKm = (routeData.distance / 1000).toFixed(1) + ' km';
+              const durationMin = Math.round(routeData.duration / 60) + ' min';
+
+              newOptions.push({
+                name: name,
+                badgeText: badgeText,
+                badgeColor: badgeColor,
+                distance: distanceKm,
+                eta: durationMin,
+                threat: threat,
+                threatColor: threatColor
+              });
             });
+
+            this.routeOptions.set(newOptions);
+            this.selectedRouteIndex.set(0);
             
             const group = new L.FeatureGroup(this.routes);
             this.map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 16 });
 
-            this.systemStatusMsg.set('ROAD ROUTING GENERATED. ANALYZING TERRAIN...');
+            this.systemStatusMsg.set('ROAD ROUTING GENERATED. AWAITING PATH SELECTION...');
           } else {
             this.generateFallbackRoutes(start, end);
           }
@@ -386,25 +430,59 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     const directRoute = L.polyline([start, end], {
       color: '#ff4444',
       weight: 3,
-      opacity: 0.8,
+      opacity: 0.35,
       dashArray: '5, 5'
-    }).bindTooltip('Direct (High Risk)', { permanent: false, sticky: true }).addTo(this.map);
+    }).bindTooltip('Option A (Direct)', { permanent: false, sticky: true }).addTo(this.map);
     
     const leftRoute = L.polyline([start, leftFlank, end], {
       color: '#9acd32',
-      weight: 4,
-      opacity: 0.9,
+      weight: 6,
+      opacity: 0.95,
       dashArray: '10, 10'
-    }).bindTooltip('Left Flank (Viable)', { permanent: false, sticky: true }).addTo(this.map);
+    }).bindTooltip('Option B (Left Flank)', { permanent: false, sticky: true }).addTo(this.map);
 
     const rightRoute = L.polyline([start, rightFlank, end], {
       color: '#ffd700',
       weight: 3,
-      opacity: 0.8,
+      opacity: 0.35,
       dashArray: '8, 8'
-    }).bindTooltip('Right Flank (Moderate)', { permanent: false, sticky: true }).addTo(this.map);
+    }).bindTooltip('Option C (Right Flank)', { permanent: false, sticky: true }).addTo(this.map);
 
     this.routes.push(directRoute, leftRoute, rightRoute);
+
+    const distanceVal = start.distanceTo(end) / 1000;
+
+    this.routeOptions.set([
+      {
+        name: 'Option A (Direct)',
+        badgeText: 'DIRECT',
+        badgeColor: '#ff4444',
+        distance: distanceVal.toFixed(1) + ' km',
+        eta: Math.round(distanceVal * 1.5) + ' min',
+        threat: 'HIGH',
+        threatColor: '#ff4444'
+      },
+      {
+        name: 'Option B (Left Flank)',
+        badgeText: 'VIABLE',
+        badgeColor: '#9acd32',
+        distance: (distanceVal * 1.25).toFixed(1) + ' km',
+        eta: Math.round(distanceVal * 1.25 * 1.5) + ' min',
+        threat: 'LOW',
+        threatColor: '#9acd32'
+      },
+      {
+        name: 'Option C (Right Flank)',
+        badgeText: 'MODERATE',
+        badgeColor: '#ffd700',
+        distance: (distanceVal * 1.35).toFixed(1) + ' km',
+        eta: Math.round(distanceVal * 1.35 * 1.5) + ' min',
+        threat: 'MODERATE',
+        threatColor: '#ffd700'
+      }
+    ]);
+    
+    this.selectedRouteIndex.set(1); // Option B Left Flank is optimal fallback
     
     const group = new L.FeatureGroup(this.routes);
     this.map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 16 });
