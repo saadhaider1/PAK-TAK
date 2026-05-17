@@ -1,0 +1,189 @@
+<!-- Splash Screen -->
+<div class="splash-screen" [class.hidden]="!isLoading()">
+  <div class="splash-content">
+    <div class="splash-brand">
+      <div class="logo-container">
+        <span class="logo-icon" style="color: #ff4444; text-shadow: none;">🪓</span>
+      </div>
+      <div class="title-group">
+        <h1 style="color: #ffd700;">PAK-TAK</h1>
+        <span class="sub-title">Offline Tac Tablet for Battlefd Integ</span>
+      </div>
+    </div>
+    
+    <div class="atak-banner splash-banner">
+      <div class="atak-text">
+        <span>Android</span>
+        <span>Tactical</span>
+        <span>Assault</span>
+        <span>Kit</span>
+      </div>
+    </div>
+    
+    <div class="loading-system">
+      <div class="loading-bar"><div class="loading-progress"></div></div>
+      <span class="loading-text">INITIALIZING TACTICAL SYSTEMS...</span>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-container" [class.blur-bg]="isLoading()">
+  <div class="scanline"></div>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-bar">
+    <div class="brand">
+      <div class="logo-container">
+        <span class="logo-icon" style="color: #ff4444; text-shadow: none;">🪓</span>
+      </div>
+      <div class="title-group">
+        <h1 style="color: #ffd700;">PAK-TAK</h1>
+        <span class="sub-title">Offline Tac Tablet for Battlefd Integ</span>
+      </div>
+    </div>
+
+    <div class="system-stats">
+      <div class="stat-item">
+        <span class="label">SIG</span>
+        <div class="bar-container">
+          <div class="bar" [style.width.%]="signalStrength()"></div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <span class="label">BAT</span>
+        <span class="value" [class.low]="batteryLevel() < 20">{{ batteryLevel() }}%</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">GPS</span>
+        <span class="value accent">{{ gpsStatus() }}</span>
+      </div>
+      <div class="stat-item clock">
+        <span class="value">{{ currentTime() }}</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-layout">
+    <!-- Left Panel: Mission Briefing -->
+    <aside class="side-panel left">
+      <div class="panel-header">
+        <h2>Mission Briefing</h2>
+        <span class="status-badge" [class.active]="missionBriefing.status === 'ACTIVE'">{{ missionBriefing.status }}</span>
+      </div>
+      <div class="panel-content">
+        
+        <!-- ATAK Banner -->
+        <div class="atak-banner">
+          <div class="atak-text">
+            <span>Android</span>
+            <span>Tactical</span>
+            <span>Assault</span>
+            <span>Kit</span>
+          </div>
+        </div>
+
+        <div class="mission-info">
+          <div class="info-row">
+            <span class="label">CODE:</span>
+            <span class="value highlight">{{ missionBriefing.codeName }}</span>
+          </div>
+        </div>
+
+        <div class="coordinates-view">
+          <h3>Coordinates</h3>
+          <div class="coord-display">
+            <div class="lat">LAT: {{ currentLat() }}</div>
+            <div class="lng">LNG: {{ currentLng() }}</div>
+            <div class="lat target-coord mt-2">TARGET LAT: {{ targetLat() }}</div>
+            <div class="lng target-coord">TARGET LNG: {{ targetLng() }}</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center: Tactical Map Viewport -->
+    <section class="map-viewport">
+      <div class="map-overlay-top">
+        <div class="compass">
+          <div class="compass-ring"></div>
+          <div class="compass-needle">N</div>
+        </div>
+        <div class="grid-coords">
+          GRID: 42S QU 84 92
+        </div>
+      </div>
+
+      <div class="map-grid" id="tactical-map">
+        <!-- Leaflet will mount here -->
+      </div>
+
+      <div class="map-overlay-bottom">
+        <div class="scale-bar">
+          <div class="scale-notches">
+            <span>0</span>
+            <span>500m</span>
+            <span>1km</span>
+          </div>
+          <div class="scale-line"></div>
+        </div>
+        <div class="map-modes">
+          <button [class.active]="currentMode() === 'SATELLITE'" (click)="setMode('SATELLITE')">SAT</button>
+          <button [class.active]="currentMode() === 'TOPOGRAPHICAL'" (click)="setMode('TOPOGRAPHICAL')">TOPO</button>
+          <button [class.active]="currentMode() === 'NIGHT'" (click)="setMode('NIGHT')">NIGHT</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Panel: Targets & Analysis -->
+    <aside class="side-panel right">
+      <div class="panel-header">
+        <h2>Target Intel</h2>
+      </div>
+      <div class="panel-content">
+        <div class="target-list">
+          <div class="target-card" *ngFor="let target of targets" (click)="selectTarget(target)">
+            <div class="target-header">
+              <span class="id">{{ target.id }}</span>
+              <span class="type">{{ target.type }}</span>
+            </div>
+            <div class="target-body">
+              <div class="coord">{{ target.coord }}</div>
+              <div class="status" [class.alert]="target.status === 'IN TRANSIT'">{{ target.status }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="terrain-analysis">
+          <h3>Terrain Analysis</h3>
+          <div class="analysis-stats">
+            <div class="row">
+              <span class="label">Forest Density:</span>
+              <span class="value">{{ terrainAnalysis().forestDensity }}</span>
+            </div>
+            <div class="row">
+              <span class="label">Elevation Gain:</span>
+              <span class="value">{{ terrainAnalysis().elevationGain }}</span>
+            </div>
+            <div class="row" [class.clickable]="terrainAnalysis().waterObstacles !== 'None'" (click)="showWaterObstacleDetails()">
+              <span class="label">Water Obstacles:</span>
+              <span class="value" [class.link]="terrainAnalysis().waterObstacles !== 'None'">{{ terrainAnalysis().waterObstacles }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Bottom Control Bar -->
+  <footer class="bottom-bar">
+    <div class="quick-actions">
+      <button class="action-btn danger" (click)="triggerSOS()">SOS</button>
+      <button class="action-btn" (click)="openComms()">COMMS</button>
+      <button class="action-btn" (click)="toggleWaypoints()">WAYPOINTS</button>
+      <button class="action-btn" (click)="offlineSync()">OFFLINE SYNC</button>
+    </div>
+    <div class="status-msg">
+      {{ systemStatusMsg() }}
+    </div>
+  </footer>
+</div>
