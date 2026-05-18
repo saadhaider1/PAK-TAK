@@ -242,10 +242,13 @@
   <!-- ==================== UN-AUTHENTICATED SYSTEM SECURITY LAYER ==================== -->
   <div class="auth-layer-wrapper" *ngIf="!isAuthenticated()">
     
+    <!-- Shared Live Tactical Background & Ambient Flame Overlays -->
+    <div class="splash-bg-image"></div>
+    <div class="splash-overlay"></div>
+    <div class="fire-flicker-overlay"></div>
+    
     <!-- PHASE 1: HIGH-FIDELITY BATTLEFIELD SPLASH / WELCOME SCREEN -->
     <div class="auth-splash-screen" *ngIf="authScreen() === 'SPLASH'">
-      <div class="splash-bg-image"></div>
-      <div class="splash-overlay"></div>
       <div class="splash-auth-content">
         <div class="military-logo">🪓</div>
         <h1 class="tactical-title">PAK-TAK</h1>
