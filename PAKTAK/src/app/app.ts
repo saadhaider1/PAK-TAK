@@ -104,10 +104,32 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     this.updateTime();
     this.timeInterval = setInterval(() => this.updateTime(), 1000);
     
+    // Restore custom mission code name from local storage if present
+    const savedCode = localStorage.getItem('paktak_mission_code');
+    if (savedCode) {
+      this.missionBriefing.codeName = savedCode;
+    }
+
     // Splash screen timer
     setTimeout(() => {
       this.isLoading.set(false);
     }, 3500);
+  }
+
+  saveMissionCodeName() {
+    localStorage.setItem('paktak_mission_code', this.missionBriefing.codeName);
+    
+    // Update active offline sync cache if it exists
+    const cached = localStorage.getItem('paktak_offline_cache');
+    if (cached) {
+      try {
+        const offlineData = JSON.parse(cached);
+        offlineData.missionBriefing = this.missionBriefing;
+        localStorage.setItem('paktak_offline_cache', JSON.stringify(offlineData));
+      } catch (e) {
+        console.warn(e);
+      }
+    }
   }
 
   ngAfterViewInit() {
@@ -248,6 +270,83 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
         this.setEndpoint(e.latlng);
       }
     });
+
+    // Check if offline cached mission data exists
+    const cached = localStorage.getItem('paktak_offline_cache');
+    if (cached) {
+      try {
+        const offlineData = JSON.parse(cached);
+        if (offlineData.startPoint && offlineData.hitPoint) {
+          this.systemStatusMsg.set('LOADED RESTORED SECURE MISSION PROFILE FROM OFFLINE CACHE.');
+          
+          // Clear any current markers
+          if (this.startMarker) this.map.removeLayer(this.startMarker);
+          if (this.endMarker) this.map.removeLayer(this.endMarker);
+
+          // Clear current routes
+          this.routes.forEach(r => this.map.removeLayer(r));
+          this.routes = [];
+
+          // Render Start Marker
+          this.startMarker = L.marker([offlineData.startPoint.lat, offlineData.startPoint.lng], {
+            icon: startIcon,
+            draggable: true
+          }).addTo(this.map).bindPopup('START POINT (OFFLINE RESTORED)');
+          this.startMarker.on('dragend', () => this.updateRoute());
+
+          // Render End Marker
+          this.endMarker = L.marker([offlineData.hitPoint.lat, offlineData.hitPoint.lng], {
+            icon: endIcon,
+            draggable: true
+          }).addTo(this.map).bindPopup('TARGET POINT (OFFLINE RESTORED)');
+          this.endMarker.on('dragend', () => this.updateRoute());
+
+          // Set lat/lng labels
+          this.currentLat.set(offlineData.startPoint.lat.toFixed(4) + '° N');
+          this.currentLng.set(offlineData.startPoint.lng.toFixed(4) + '° E');
+          this.targetLat.set(offlineData.hitPoint.lat.toFixed(4) + '° N');
+          this.targetLng.set(offlineData.hitPoint.lng.toFixed(4) + '° E');
+
+          // Restore routes if present
+          if (offlineData.routes && offlineData.routes.length > 0) {
+            offlineData.routes.forEach((route: any) => {
+              const polyline = L.polyline(route.coords, {
+                color: route.color,
+                weight: route.weight,
+                opacity: route.opacity,
+                dashArray: route.dashArray
+              });
+              if (route.tooltipText) {
+                polyline.bindTooltip(route.tooltipText, { permanent: false, sticky: true });
+              }
+              polyline.addTo(this.map);
+              this.routes.push(polyline);
+            });
+          }
+
+          if (offlineData.routeOptions) {
+            this.routeOptions.set(offlineData.routeOptions);
+          }
+          if (offlineData.selectedRouteIndex !== undefined) {
+            this.selectedRouteIndex.set(offlineData.selectedRouteIndex);
+          }
+          if (offlineData.terrainAnalysis) {
+            this.terrainAnalysis.set(offlineData.terrainAnalysis);
+          }
+          if (offlineData.missionBriefing) {
+            this.missionBriefing = offlineData.missionBriefing;
+          }
+
+          // Center view on restored coordinates
+          const group = new L.FeatureGroup(this.routes.length > 0 ? this.routes : [this.startMarker, this.endMarker]);
+          setTimeout(() => {
+            this.map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 16 });
+          }, 100);
+        }
+      } catch (err) {
+        console.warn('Failed to restore cached offline data:', err);
+      }
+    }
   }
 
   locateUser() {
@@ -791,19 +890,36 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
       if (progress >= 100) {
         clearInterval(interval);
         
-        // Save offline data to localStorage
+        // Serialize current routes
+        const serializedRoutes = this.routes.map(polyline => {
+          const latlngs = polyline.getLatLngs() as L.LatLng[];
+          return {
+            coords: latlngs.map(latlng => [latlng.lat, latlng.lng]),
+            color: (polyline.options as any).color,
+            weight: (polyline.options as any).weight,
+            opacity: (polyline.options as any).opacity,
+            dashArray: (polyline.options as any).dashArray,
+            tooltipText: polyline.getTooltip()?.getContent()
+          };
+        });
+
+        // Save complete offline payload to localStorage
         const offlineData = {
           startPoint: start,
           hitPoint: end,
+          routes: serializedRoutes,
+          routeOptions: this.routeOptions(),
+          selectedRouteIndex: this.selectedRouteIndex(),
           terrainAnalysis: this.terrainAnalysis(),
+          missionBriefing: this.missionBriefing,
           timestamp: new Date().toISOString()
         };
         localStorage.setItem('paktak_offline_cache', JSON.stringify(offlineData));
-        console.log('[OFFLINE CACHE] Saved mission data to local storage:', offlineData);
+        console.log('[OFFLINE CACHE] Saved complete mission & route details to local storage:', offlineData);
 
-        this.systemStatusMsg.set('OFFLINE SYNC COMPLETE. TILES & TERRAIN CACHED FOR OFFLINE USE.');
+        this.systemStatusMsg.set('OFFLINE SYNC COMPLETE. TILES, ROUTES & TERRAIN CACHED FOR OFFLINE USE.');
         rect.setStyle({ color: '#ffffff', fillOpacity: 0.2, dashArray: '0' });
-        rect.bindPopup('<b>Offline Area Cached</b><br>Points & Terrain saved to local storage').openPopup();
+        rect.bindPopup('<b>Offline Area Cached</b><br>Points, Routes & Terrain saved successfully.').openPopup();
         setTimeout(() => this.systemStatusMsg.set('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.1 GB AVAILABLE'), 5000);
       }
     }, 500);

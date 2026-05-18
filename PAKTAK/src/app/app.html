@@ -90,9 +90,9 @@
           </div>
 
           <div class="mission-info">
-            <div class="info-row">
+            <div class="info-row" style="align-items: center;">
               <span class="label">CODE:</span>
-              <span class="value highlight">{{ missionBriefing.codeName }}</span>
+              <input type="text" [(ngModel)]="missionBriefing.codeName" (ngModelChange)="saveMissionCodeName()" class="editable-code-input" title="Click to edit Mission Code Name" />
             </div>
             <div class="info-row">
               <span class="label">CLEARANCE:</span>
