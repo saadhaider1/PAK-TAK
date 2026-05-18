@@ -914,3 +914,378 @@ li .bullet { color: var(--military-olive-light); }
     -webkit-text-stroke: 2px #228B22;
   }
 }
+
+/* ==================== DISCONNECT & AUTHENTICATION STYLING ==================== */
+.disconnect-btn {
+  background: rgba(255, 68, 68, 0.2);
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.15);
+}
+
+.disconnect-btn:hover {
+  background: rgba(255, 68, 68, 0.35);
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.4);
+  text-shadow: 0 0 4px rgba(255, 68, 68, 0.5);
+  transform: translateY(-1px);
+}
+
+.auth-layer-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Roboto Mono', monospace;
+}
+
+/* Splash/Welcome Screen styling with War Silhouette background */
+.auth-splash-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.splash-bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('/tactical_battlefield_bg.png') no-repeat center center;
+  background-size: cover;
+  filter: brightness(0.65) contrast(1.1);
+  transform: scale(1.02);
+  z-index: 1;
+}
+
+.splash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle, rgba(10, 15, 10, 0.2) 0%, rgba(5, 8, 5, 0.8) 100%);
+  z-index: 2;
+}
+
+.splash-auth-content {
+  position: relative;
+  z-index: 3;
+  max-width: 600px;
+  padding: 30px;
+  background: rgba(10, 15, 10, 0.45);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(154, 205, 50, 0.25);
+  border-radius: 12px;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.05),
+    0 12px 48px rgba(0, 0, 0, 0.5);
+  animation: floatUp 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.military-logo {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  filter: drop-shadow(0 0 10px rgba(255, 68, 68, 0.5));
+  animation: pulseLogo 2s infinite ease-in-out;
+}
+
+.tactical-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: #ffd700;
+  letter-spacing: 6px;
+  margin-bottom: 5px;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.tactical-subtitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 3px;
+  margin-bottom: 25px;
+}
+
+.terminal-box {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(154, 205, 50, 0.3);
+  border-radius: 6px;
+  padding: 15px 20px;
+  text-align: left;
+  margin-bottom: 30px;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.term-line {
+  display: block;
+  color: var(--text-secondary);
+}
+
+.term-line.cursor {
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+.initiate-btn {
+  position: relative;
+  background: rgba(34, 139, 34, 0.35);
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  padding: 14px 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 0 15px rgba(154, 205, 50, 0.25);
+}
+
+.initiate-btn:hover {
+  background: rgba(154, 205, 50, 0.35);
+  color: #ffffff;
+  box-shadow: 0 0 25px rgba(154, 205, 50, 0.5);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Glassmorphism Auth Forms */
+.auth-form-card-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(10, 15, 10, 0.9) 0%, rgba(5, 8, 5, 0.95) 100%);
+  background-size: cover;
+  padding: 20px;
+}
+
+.auth-glass-card {
+  width: 100%;
+  max-width: 440px;
+  background: rgba(10, 15, 10, 0.45);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(154, 205, 50, 0.35);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.05),
+    0 12px 48px rgba(0, 0, 0, 0.5);
+  animation: floatUp 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.card-header h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.indicator.green {
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+}
+
+.indicator.orange {
+  background: #ffd700;
+  box-shadow: 0 0 8px #ffd700;
+}
+
+.card-desc {
+  font-size: 0.75rem;
+  color: rgba(220, 220, 220, 0.6);
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+
+.form-group input,
+.form-group select {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(154, 205, 50, 0.3);
+  border-radius: 6px;
+  color: #ffffff;
+  padding: 10px 14px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 10px rgba(154, 205, 50, 0.25);
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.auth-submit-btn {
+  background: rgba(34, 139, 34, 0.3);
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 1.5px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 0 10px rgba(154, 205, 50, 0.15);
+  margin-top: 10px;
+}
+
+.auth-submit-btn:hover {
+  background: rgba(154, 205, 50, 0.3);
+  box-shadow: 0 0 18px rgba(154, 205, 50, 0.45);
+  text-shadow: 0 0 4px rgba(154, 205, 50, 0.5);
+  transform: translateY(-1px);
+}
+
+.auth-submit-btn.orange {
+  border-color: #ffd700;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.15);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.15);
+}
+
+.auth-submit-btn.orange:hover {
+  background: rgba(255, 215, 0, 0.25);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
+  text-shadow: 0 0 4px rgba(255, 215, 0, 0.5);
+}
+
+.card-footer {
+  margin-top: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  border-top: 1px dashed rgba(85, 107, 47, 0.3);
+  padding-top: 15px;
+  color: rgba(220, 220, 220, 0.5);
+}
+
+.footer-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent-green);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 5px rgba(154, 205, 50, 0.15);
+}
+
+.footer-link-btn:hover {
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+/* Feedback messages styling */
+.auth-feedback {
+  font-size: 0.75rem;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  line-height: 1.4;
+  animation: fadeIn 0.3s ease;
+}
+
+.auth-feedback.success {
+  background: rgba(34, 139, 34, 0.2);
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+}
+
+.auth-feedback.error {
+  background: rgba(255, 68, 68, 0.2);
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  font-weight: 600;
+}
+
+/* Animations */
+@keyframes pulseLogo {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(255, 68, 68, 0.5));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 20px rgba(255, 68, 68, 0.8));
+  }
+}
+
+@keyframes floatUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

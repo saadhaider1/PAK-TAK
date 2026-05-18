@@ -1,6 +1,8 @@
 import { Component, signal, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
+import { SqliteService } from './sqlite.service';
 
 const startIcon = L.icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
@@ -23,11 +25,26 @@ const endIcon = L.icon({
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App implements OnInit, OnDestroy, AfterViewInit {
+  constructor(private sqlite: SqliteService) {}
+
+  public isAuthenticated = signal(false);
+  public authScreen = signal<'SPLASH' | 'LOGIN' | 'REGISTER'>('SPLASH');
+  public currentUser = signal<any>(null);
+  
+  public regUsername = '';
+  public regPassword = '';
+  public regClearance = 'LEVEL-1 OPERATOR';
+  
+  public loginUsername = '';
+  public loginPassword = '';
+  
+  public authError = signal<string>('');
+  public authSuccess = signal<string>('');
   public isLoading = signal(true);
   public currentTime = signal('');
   public currentMode = signal('SATELLITE');
@@ -94,8 +111,83 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.initMap();
-    this.locateUser();
+    // Map initialization is delayed until user is authenticated
+  }
+
+  initiateSystemAccess() {
+    this.authScreen.set('REGISTER');
+    this.authError.set('');
+    this.authSuccess.set('');
+  }
+
+  switchToLogin() {
+    this.authScreen.set('LOGIN');
+    this.authError.set('');
+    this.authSuccess.set('');
+  }
+
+  switchToRegister() {
+    this.authScreen.set('REGISTER');
+    this.authError.set('');
+    this.authSuccess.set('');
+  }
+
+  registerUser() {
+    if (!this.regUsername.trim() || !this.regPassword.trim()) {
+      this.authError.set('SQLITE_ERROR: Callsign and Access Code cannot be empty.');
+      return;
+    }
+    try {
+      this.sqlite.runSql('INSERT INTO users (username, password, clearance) VALUES (?, ?, ?)', [
+        this.regUsername.trim(), this.regPassword, this.regClearance
+      ]);
+      this.authSuccess.set('REGISTRATION SUCCESSFUL. REDIRECTING TO ACCESS TERMINAL...');
+      this.authError.set('');
+      setTimeout(() => {
+        this.switchToLogin();
+      }, 2000);
+    } catch (e: any) {
+      this.authError.set(e.message || 'Registration failed');
+    }
+  }
+
+  loginUser() {
+    if (!this.loginUsername.trim() || !this.loginPassword.trim()) {
+      this.authError.set('SQLITE_ERROR: Callsign and Access Code cannot be empty.');
+      return;
+    }
+    try {
+      const rows = this.sqlite.runSql('SELECT * FROM users WHERE username = ? AND password = ?', [
+        this.loginUsername.trim(), this.loginPassword
+      ]);
+      if (rows && rows.length > 0) {
+        const user = rows[0];
+        this.currentUser.set(user);
+        this.isAuthenticated.set(true);
+        this.authError.set('');
+        this.systemStatusMsg.set(`TACTICAL UPLINK SECURED: WELCOME OPERATIVE ${user.username.toUpperCase()} (${user.clearance})`);
+        
+        // Let the DOM render then initialize Leaflet
+        setTimeout(() => {
+          this.initMap();
+          this.locateUser();
+        }, 150);
+      } else {
+        this.authError.set('SQLITE_AUTH_ERROR: Invalid Callsign or Encryption Key.');
+      }
+    } catch (e: any) {
+      this.authError.set(e.message || 'Login failed');
+    }
+  }
+
+  logoutUser() {
+    this.isAuthenticated.set(false);
+    this.authScreen.set('SPLASH');
+    this.currentUser.set(null);
+    this.loginUsername = '';
+    this.loginPassword = '';
+    this.regUsername = '';
+    this.regPassword = '';
   }
 
   ngOnDestroy() {

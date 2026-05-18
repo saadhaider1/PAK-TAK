@@ -1,4 +1,4 @@
-<!-- Splash Screen -->
+<!-- Splash Screen (Initial System Load) -->
 <div class="splash-screen" [class.hidden]="!isLoading()">
   <div class="splash-content">
     <div class="splash-brand">
@@ -7,7 +7,7 @@
       </div>
       <div class="title-group">
         <h1 style="color: #ffd700;">PAK-TAK</h1>
-        <span class="sub-title">Offline Tac Tablet for Battlefd Integ</span>
+        <span class="sub-title">Offline Tac Tablet for Battlefield Integration</span>
       </div>
     </div>
     
@@ -29,199 +29,321 @@
 <div class="dashboard-container" [class.blur-bg]="isLoading()">
   <div class="scanline"></div>
 
-  <!-- Top Navigation Bar -->
-  <header class="top-bar">
-    <div class="brand">
-      <div class="logo-container">
-        <span class="logo-icon" style="color: #ff4444; text-shadow: none;">🪓</span>
-      </div>
-      <div class="title-group">
-        <h1 style="color: #ffd700;">PAK-TAK</h1>
-        <span class="sub-title">Offline Tac Tablet for Battlefd Integ</span>
-      </div>
-    </div>
-
-    <div class="system-stats">
-      <div class="stat-item">
-        <span class="label">SIG</span>
-        <div class="bar-container">
-          <div class="bar" [style.width.%]="signalStrength()"></div>
+  <!-- ==================== AUTHENTICATED TACTICAL DASHBOARD ==================== -->
+  <ng-container *ngIf="isAuthenticated()">
+    <!-- Top Navigation Bar -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="logo-container">
+          <span class="logo-icon" style="color: #ff4444; text-shadow: none;">🪓</span>
+        </div>
+        <div class="title-group">
+          <h1 style="color: #ffd700;">PAK-TAK</h1>
+          <span class="sub-title">Offline Tac Tablet for Battlefield Integration</span>
         </div>
       </div>
-      <div class="stat-item">
-        <span class="label">BAT</span>
-        <span class="value" [class.low]="batteryLevel() < 20">{{ batteryLevel() }}%</span>
-      </div>
-      <div class="stat-item">
-        <span class="label">GPS</span>
-        <span class="value accent">{{ gpsStatus() }}</span>
-      </div>
-      <div class="stat-item clock">
-        <span class="value">{{ currentTime() }}</span>
-      </div>
-    </div>
-  </header>
 
-  <main class="main-layout">
-    <!-- Left Panel: Mission Briefing -->
-    <aside class="side-panel left">
-      <div class="panel-header">
-        <h2>Mission Briefing</h2>
-        <span class="status-badge" [class.active]="missionBriefing.status === 'ACTIVE'">{{ missionBriefing.status }}</span>
+      <div class="system-stats">
+        <div class="stat-item" *ngIf="currentUser()">
+          <span class="label">OPERATIVE</span>
+          <span class="value" style="color: var(--accent-green)">{{ currentUser().username.toUpperCase() }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="label">SIG</span>
+          <div class="bar-container">
+            <div class="bar" [style.width.%]="signalStrength()"></div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <span class="label">BAT</span>
+          <span class="value" [class.low]="batteryLevel() < 20">{{ batteryLevel() }}%</span>
+        </div>
+        <div class="stat-item">
+          <span class="label">GPS</span>
+          <span class="value accent">{{ gpsStatus() }}</span>
+        </div>
+        <div class="stat-item clock">
+          <span class="value">{{ currentTime() }}</span>
+        </div>
+        <!-- Disconnect/Logout Button -->
+        <button class="disconnect-btn" (click)="logoutUser()">
+          DISCONNECT
+        </button>
       </div>
-      <div class="panel-content">
+    </header>
+
+    <main class="main-layout">
+      <!-- Left Panel: Mission Briefing -->
+      <aside class="side-panel left">
+        <div class="panel-header">
+          <h2>Mission Briefing</h2>
+          <span class="status-badge" [class.active]="missionBriefing.status === 'ACTIVE'">{{ missionBriefing.status }}</span>
+        </div>
+        <div class="panel-content">
+          <!-- ATAK Banner -->
+          <div class="atak-banner">
+            <div class="atak-text">
+              <span>Tactical</span>
+              <span>Assault</span>
+              <span>Kit</span>
+            </div>
+          </div>
+
+          <div class="mission-info">
+            <div class="info-row">
+              <span class="label">CODE:</span>
+              <span class="value highlight">{{ missionBriefing.codeName }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">CLEARANCE:</span>
+              <span class="value highlight" style="color: #ffd700;">{{ currentUser()?.clearance }}</span>
+            </div>
+          </div>
+
+          <div class="coordinates-view">
+            <h3>Coordinates</h3>
+            <div class="coord-display">
+              <div class="lat">LAT: {{ currentLat() }}</div>
+              <div class="lng">LNG: {{ currentLng() }}</div>
+              <div class="lat target-coord mt-2">TARGET LAT: {{ targetLat() }}</div>
+              <div class="lng target-coord">TARGET LNG: {{ targetLng() }}</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center: Tactical Map Viewport -->
+      <section class="map-viewport">
+        <!-- Search & Mode Panel -->
+        <div class="map-search-bar-container">
+          <div class="search-input-wrapper">
+            <button (click)="searchLocation(searchInput.value)" class="search-btn">
+              <svg class="search-svg" viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              </svg>
+              <span class="btn-text">SEARCH</span>
+            </button>
+            <input type="text" #searchInput placeholder="SEARCH LOCATION (E.G. TOKYO, PARIS)..." (keyup.enter)="searchLocation(searchInput.value)" />
+          </div>
+          <div class="mode-toggle-group">
+            <button [class.active]="interactionMode() === 'START'" (click)="setInteractionMode('START')" class="toggle-mode-btn start-mode">
+              SET START
+            </button>
+            <button [class.active]="interactionMode() === 'HIT'" (click)="setInteractionMode('HIT')" class="toggle-mode-btn hit-mode">
+              SET TARGET
+            </button>
+          </div>
+        </div>
+
+        <div class="map-overlay-top">
+          <div class="compass">
+            <div class="compass-ring"></div>
+            <div class="compass-needle">N</div>
+          </div>
+          <div class="grid-coords">
+            GRID: 42S QU 84 92
+          </div>
+        </div>
+
+        <div class="map-grid" id="tactical-map">
+          <!-- Leaflet will mount here -->
+        </div>
+
+        <div class="map-overlay-bottom">
+          <div class="scale-bar">
+            <div class="scale-notches">
+              <span>0</span>
+              <span>500m</span>
+              <span>1km</span>
+            </div>
+            <div class="scale-line"></div>
+          </div>
+          <div class="map-modes">
+            <button [class.active]="currentMode() === 'SATELLITE'" (click)="setMode('SATELLITE')">SAT</button>
+            <button [class.active]="currentMode() === 'TOPOGRAPHICAL'" (click)="setMode('TOPOGRAPHICAL')">TOPO</button>
+            <button [class.active]="currentMode() === 'NIGHT'" (click)="setMode('NIGHT')">NIGHT</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Targets & Analysis -->
+      <aside class="side-panel right">
+        <div class="panel-header">
+          <h2>Target Intel</h2>
+        </div>
+        <div class="panel-content">
+          <div class="target-list">
+            <div class="target-card" *ngFor="let target of targets" (click)="selectTarget(target)">
+              <div class="target-header">
+                <span class="id">{{ target.id }}</span>
+                <span class="type">{{ target.type }}</span>
+              </div>
+              <div class="target-body">
+                <div class="coord">{{ target.coord }}</div>
+                <div class="status" [class.alert]="target.status === 'IN TRANSIT'">{{ target.status }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calculated Route Options List (A, B, C) -->
+          <div class="route-options-panel" *ngIf="routeOptions().length > 0">
+            <h3>Calculated Route Options</h3>
+            <div class="route-option-card" 
+                 *ngFor="let opt of routeOptions(); let idx = index" 
+                 [class.active]="selectedRouteIndex() === idx"
+                 (click)="selectRouteOption(idx)">
+              <div class="opt-header">
+                <span class="opt-name">{{ opt.name }}</span>
+                <span class="opt-badge" [style.background-color]="opt.badgeColor">{{ opt.badgeText }}</span>
+              </div>
+              <div class="opt-details">
+                <div class="stat"><span>Dist:</span> <b>{{ opt.distance }}</b></div>
+                <div class="stat"><span>ETA:</span> <b>{{ opt.eta }}</b></div>
+                <div class="stat"><span>Threat:</span> <b [style.color]="opt.threatColor">{{ opt.threat }}</b></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="terrain-analysis">
+            <h3>Terrain Analysis</h3>
+            <div class="analysis-stats">
+              <div class="row">
+                <span class="label">Forest Density:</span>
+                <span class="value">{{ terrainAnalysis().forestDensity }}</span>
+              </div>
+              <div class="row">
+                <span class="label">Elevation Gain:</span>
+                <span class="value">{{ terrainAnalysis().elevationGain }}</span>
+              </div>
+              <div class="row" [class.clickable]="terrainAnalysis().waterObstacles !== 'None'" (click)="showWaterObstacleDetails()">
+                <span class="label">Water Obstacles:</span>
+                <span class="value" [class.link]="terrainAnalysis().waterObstacles !== 'None'">{{ terrainAnalysis().waterObstacles }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Bottom Control Bar -->
+    <footer class="bottom-bar">
+      <div class="quick-actions">
+        <button class="action-btn danger" (click)="triggerSOS()">SOS</button>
+        <button class="action-btn" (click)="openComms()">COMMS</button>
+        <button class="action-btn" (click)="toggleWaypoints()">WAYPOINTS</button>
+        <button class="action-btn" (click)="offlineSync()">OFFLINE SYNC</button>
+      </div>
+      <div class="status-msg">
+        {{ systemStatusMsg() }}
+      </div>
+    </footer>
+  </ng-container>
+
+  <!-- ==================== UN-AUTHENTICATED SYSTEM SECURITY LAYER ==================== -->
+  <div class="auth-layer-wrapper" *ngIf="!isAuthenticated()">
+    
+    <!-- PHASE 1: HIGH-FIDELITY BATTLEFIELD SPLASH / WELCOME SCREEN -->
+    <div class="auth-splash-screen" *ngIf="authScreen() === 'SPLASH'">
+      <div class="splash-bg-image"></div>
+      <div class="splash-overlay"></div>
+      <div class="splash-auth-content">
+        <div class="military-logo">🪓</div>
+        <h1 class="tactical-title">PAK-TAK</h1>
+        <p class="tactical-subtitle">SECURE MOBILE BATTLEFIELD ASSAULT LINK</p>
         
-        <!-- ATAK Banner -->
-        <div class="atak-banner">
-          <div class="atak-text">
-            <span>Tactical</span>
-            <span>Assault</span>
-            <span>Kit</span>
-          </div>
+        <div class="terminal-box">
+          <span class="term-line">> STATUS: SECURE CLIENT OFFLINE</span>
+          <span class="term-line">> UPLINK STATE: DISCONNECTED</span>
+          <span class="term-line">> SECURE DATABASE: SQLITE IN-MEMORY ACTIVE</span>
+          <span class="term-line cursor">> SYSTEM AWAITING SECURITY INITIATION..._</span>
         </div>
-
-        <div class="mission-info">
-          <div class="info-row">
-            <span class="label">CODE:</span>
-            <span class="value highlight">{{ missionBriefing.codeName }}</span>
-          </div>
-        </div>
-
-        <div class="coordinates-view">
-          <h3>Coordinates</h3>
-          <div class="coord-display">
-            <div class="lat">LAT: {{ currentLat() }}</div>
-            <div class="lng">LNG: {{ currentLng() }}</div>
-            <div class="lat target-coord mt-2">TARGET LAT: {{ targetLat() }}</div>
-            <div class="lng target-coord">TARGET LNG: {{ targetLng() }}</div>
-          </div>
-        </div>
+        
+        <button class="initiate-btn" (click)="initiateSystemAccess()">
+          <span class="btn-glow"></span>
+          INITIATE SYSTEM ACCESS
+        </button>
       </div>
-    </aside>
-
-    <!-- Center: Tactical Map Viewport -->
-    <section class="map-viewport">
-      <!-- Search & Mode Panel -->
-      <div class="map-search-bar-container">
-        <div class="search-input-wrapper">
-          <button (click)="searchLocation(searchInput.value)" class="search-btn">
-            <svg class="search-svg" viewBox="0 0 24 24" width="18" height="18">
-              <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-            <span class="btn-text">SEARCH</span>
-          </button>
-          <input type="text" #searchInput placeholder="SEARCH LOCATION (E.G. TOKYO, PARIS)..." (keyup.enter)="searchLocation(searchInput.value)" />
-        </div>
-        <div class="mode-toggle-group">
-          <button [class.active]="interactionMode() === 'START'" (click)="setInteractionMode('START')" class="toggle-mode-btn start-mode">
-            SET START
-          </button>
-          <button [class.active]="interactionMode() === 'HIT'" (click)="setInteractionMode('HIT')" class="toggle-mode-btn hit-mode">
-            SET TARGET
-          </button>
-        </div>
-      </div>
-
-      <div class="map-overlay-top">
-        <div class="compass">
-          <div class="compass-ring"></div>
-          <div class="compass-needle">N</div>
-        </div>
-        <div class="grid-coords">
-          GRID: 42S QU 84 92
-        </div>
-      </div>
-
-      <div class="map-grid" id="tactical-map">
-        <!-- Leaflet will mount here -->
-      </div>
-
-      <div class="map-overlay-bottom">
-        <div class="scale-bar">
-          <div class="scale-notches">
-            <span>0</span>
-            <span>500m</span>
-            <span>1km</span>
-          </div>
-          <div class="scale-line"></div>
-        </div>
-        <div class="map-modes">
-          <button [class.active]="currentMode() === 'SATELLITE'" (click)="setMode('SATELLITE')">SAT</button>
-          <button [class.active]="currentMode() === 'TOPOGRAPHICAL'" (click)="setMode('TOPOGRAPHICAL')">TOPO</button>
-          <button [class.active]="currentMode() === 'NIGHT'" (click)="setMode('NIGHT')">NIGHT</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Right Panel: Targets & Analysis -->
-    <aside class="side-panel right">
-      <div class="panel-header">
-        <h2>Target Intel</h2>
-      </div>
-      <div class="panel-content">
-        <div class="target-list">
-          <div class="target-card" *ngFor="let target of targets" (click)="selectTarget(target)">
-            <div class="target-header">
-              <span class="id">{{ target.id }}</span>
-              <span class="type">{{ target.type }}</span>
-            </div>
-            <div class="target-body">
-              <div class="coord">{{ target.coord }}</div>
-              <div class="status" [class.alert]="target.status === 'IN TRANSIT'">{{ target.status }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Calculated Route Options List (A, B, C) -->
-        <div class="route-options-panel" *ngIf="routeOptions().length > 0">
-          <h3>Calculated Route Options</h3>
-          <div class="route-option-card" 
-               *ngFor="let opt of routeOptions(); let idx = index" 
-               [class.active]="selectedRouteIndex() === idx"
-               (click)="selectRouteOption(idx)">
-            <div class="opt-header">
-              <span class="opt-name">{{ opt.name }}</span>
-              <span class="opt-badge" [style.background-color]="opt.badgeColor">{{ opt.badgeText }}</span>
-            </div>
-            <div class="opt-details">
-              <div class="stat"><span>Dist:</span> <b>{{ opt.distance }}</b></div>
-              <div class="stat"><span>ETA:</span> <b>{{ opt.eta }}</b></div>
-              <div class="stat"><span>Threat:</span> <b [style.color]="opt.threatColor">{{ opt.threat }}</b></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="terrain-analysis">
-          <h3>Terrain Analysis</h3>
-          <div class="analysis-stats">
-            <div class="row">
-              <span class="label">Forest Density:</span>
-              <span class="value">{{ terrainAnalysis().forestDensity }}</span>
-            </div>
-            <div class="row">
-              <span class="label">Elevation Gain:</span>
-              <span class="value">{{ terrainAnalysis().elevationGain }}</span>
-            </div>
-            <div class="row" [class.clickable]="terrainAnalysis().waterObstacles !== 'None'" (click)="showWaterObstacleDetails()">
-              <span class="label">Water Obstacles:</span>
-              <span class="value" [class.link]="terrainAnalysis().waterObstacles !== 'None'">{{ terrainAnalysis().waterObstacles }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
-  </main>
-
-  <!-- Bottom Control Bar -->
-  <footer class="bottom-bar">
-    <div class="quick-actions">
-      <button class="action-btn danger" (click)="triggerSOS()">SOS</button>
-      <button class="action-btn" (click)="openComms()">COMMS</button>
-      <button class="action-btn" (click)="toggleWaypoints()">WAYPOINTS</button>
-      <button class="action-btn" (click)="offlineSync()">OFFLINE SYNC</button>
     </div>
-    <div class="status-msg">
-      {{ systemStatusMsg() }}
+
+    <!-- PHASE 2: REGISTRATION FORM -->
+    <div class="auth-form-card-container" *ngIf="authScreen() === 'REGISTER'">
+      <div class="auth-glass-card">
+        <div class="card-header">
+          <div class="indicator green"></div>
+          <h2>SECURE REGISTRATION TERMINAL</h2>
+        </div>
+        <p class="card-desc">Lock your operative callsign and encryption access code to create a local SQLite database account.</p>
+
+        <div class="auth-feedback success" *ngIf="authSuccess()">{{ authSuccess() }}</div>
+        <div class="auth-feedback error" *ngIf="authError()">{{ authError() }}</div>
+
+        <form (ngSubmit)="registerUser()" class="auth-form">
+          <div class="form-group">
+            <label>OPERATIVE CALLSIGN</label>
+            <input type="text" [(ngModel)]="regUsername" name="regUsername" placeholder="E.G. GHOST_01" required autocomplete="off" />
+          </div>
+          
+          <div class="form-group">
+            <label>ENCRYPTION ACCESS CODE (PASSWORD)</label>
+            <input type="password" [(ngModel)]="regPassword" name="regPassword" placeholder="••••••••" required />
+          </div>
+
+          <div class="form-group">
+            <label>TACTICAL CLEARANCE LEVEL</label>
+            <select [(ngModel)]="regClearance" name="regClearance">
+              <option value="LEVEL-1 OPERATOR">LEVEL-1 OPERATOR</option>
+              <option value="LEVEL-2 COMMANDER">LEVEL-2 COMMANDER</option>
+              <option value="LEVEL-3 CHIEF OF STAFF">LEVEL-3 CHIEF OF STAFF</option>
+            </select>
+          </div>
+
+          <button type="submit" class="auth-submit-btn">
+            REGISTER SECURITY PROFILE
+          </button>
+        </form>
+
+        <div class="card-footer">
+          <span>ALREADY REGISTERED?</span>
+          <button class="footer-link-btn" (click)="switchToLogin()">ACCESS ACCOUNT</button>
+        </div>
+      </div>
     </div>
-  </footer>
+
+    <!-- PHASE 3: LOGIN FORM -->
+    <div class="auth-form-card-container" *ngIf="authScreen() === 'LOGIN'">
+      <div class="auth-glass-card">
+        <div class="card-header">
+          <div class="indicator orange"></div>
+          <h2>TACTICAL LOGIN TERMINAL</h2>
+        </div>
+        <p class="card-desc">Enter callsign and unlock credentials to access the battlefield mapping network.</p>
+
+        <div class="auth-feedback success" *ngIf="authSuccess()">{{ authSuccess() }}</div>
+        <div class="auth-feedback error" *ngIf="authError()">{{ authError() }}</div>
+
+        <form (ngSubmit)="loginUser()" class="auth-form">
+          <div class="form-group">
+            <label>OPERATIVE CALLSIGN</label>
+            <input type="text" [(ngModel)]="loginUsername" name="loginUsername" placeholder="ENTER CALLSIGN..." required autocomplete="off" />
+          </div>
+          
+          <div class="form-group">
+            <label>ENCRYPTION ACCESS CODE</label>
+            <input type="password" [(ngModel)]="loginPassword" name="loginPassword" placeholder="ENTER ACCESS CODE..." required />
+          </div>
+
+          <button type="submit" class="auth-submit-btn orange">
+            ESTABLISH TACTICAL LINK
+          </button>
+        </form>
+
+        <div class="card-footer">
+          <span>NEW OPERATIVE?</span>
+          <button class="footer-link-btn" (click)="switchToRegister()">CREATE SECURITY PROFILE</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
 </div>
