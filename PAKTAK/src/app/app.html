@@ -149,6 +149,15 @@
           <!-- Leaflet will mount here -->
         </div>
 
+        <!-- Premium Floating Download Secure Region overlay button -->
+        <div class="map-download-overlay" *ngIf="hasStartAndEnd()">
+          <button class="download-map-btn" (click)="offlineSync()" title="Download secure map area between start and end target">
+            <span class="icon">📥</span>
+            <span>DOWNLOAD OFFLINE REGION</span>
+            <span class="btn-glow-ring"></span>
+          </button>
+        </div>
+
         <div class="map-overlay-bottom">
           <div class="scale-bar">
             <div class="scale-notches">

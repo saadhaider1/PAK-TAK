@@ -75,6 +75,10 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   public routeOptions = signal<any[]>([]);
   public selectedRouteIndex = signal<number>(0);
 
+  public hasStartAndEnd(): boolean {
+    return !!this.startMarker && !!this.endMarker;
+  }
+
   public missionBriefing = {
     codeName: 'OP-DESERT-FOX',
     status: 'ACTIVE',

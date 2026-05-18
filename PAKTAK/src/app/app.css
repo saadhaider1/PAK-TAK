@@ -1362,4 +1362,63 @@ li .bullet { color: var(--military-olive-light); }
   color: #ffffff;
 }
 
+/* Floating Offline Download Button Overlay */
+.map-download-overlay {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  pointer-events: auto;
+  animation: slideDownFade 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.download-map-btn {
+  background: rgba(34, 139, 34, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 10px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05),
+    0 0 10px rgba(154, 205, 50, 0.15);
+}
+
+.download-map-btn:hover {
+  background: rgba(154, 205, 50, 0.25);
+  border-color: #ffd700;
+  color: #ffd700;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(255, 215, 0, 0.3);
+  text-shadow: 0 0 4px rgba(255, 215, 0, 0.4);
+  transform: scale(1.03) translateY(-1px);
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+
 
