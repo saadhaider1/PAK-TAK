@@ -71,9 +71,15 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   
   public systemStatusMsg = signal('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.2 GB AVAILABLE');
   public waypointsVisible = false;
-  public interactionMode = signal<'START' | 'HIT'>('HIT');
+  public interactionMode = signal<'START' | 'HIT' | 'WAYPOINT'>('HIT');
   public routeOptions = signal<any[]>([]);
   public selectedRouteIndex = signal<number>(0);
+  public waypoints = signal<Array<{ id: string; name: string; lat: number; lng: number; marker?: L.Marker<any> }>>([]);
+  public sunTimes = signal({ sunrise: '--:--', sunset: '--:--', date: 'TODAY' });
+  public journeyActive = signal(false);
+  public journeyMarker?: L.Marker;
+  public journeyTimer?: any;
+  public selectedRouteCoordinates: L.LatLng[] = [];
 
   public hasStartAndEnd(): boolean {
     return !!this.startMarker && !!this.endMarker;
@@ -266,10 +272,12 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     this.forestShapes.addTo(this.map);
     this.offlineSyncLayer.addTo(this.map);
 
-    // Map click event to set start or endpoint based on active mode
+    // Map click event to set start, endpoint, or waypoints based on active mode
     this.map.on('click', (e: L.LeafletMouseEvent) => {
       if (this.interactionMode() === 'START') {
         this.setStartpoint(e.latlng);
+      } else if (this.interactionMode() === 'WAYPOINT') {
+        this.addWaypoint(e.latlng);
       } else {
         this.setEndpoint(e.latlng);
       }
@@ -328,6 +336,11 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
             });
           }
 
+          if (offlineData.waypoints && Array.isArray(offlineData.waypoints)) {
+            offlineData.waypoints.forEach((wp: any) => this.restoreWaypoint(wp));
+            this.waypointsVisible = true;
+            this.redrawWaypoints();
+          }
           if (offlineData.routeOptions) {
             this.routeOptions.set(offlineData.routeOptions);
           }
@@ -365,6 +378,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
           this.currentLngNum = lng;
           this.currentLat.set(lat.toFixed(4) + '° ' + (lat >= 0 ? 'N' : 'S'));
           this.currentLng.set(lng.toFixed(4) + '° ' + (lng >= 0 ? 'E' : 'W'));
+          this.computeSunTimes(lat, lng);
 
           const latlng = new L.LatLng(lat, lng);
           this.map.setView(latlng, 15);
@@ -412,13 +426,250 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
         polyline.setStyle({ weight: 3, opacity: 0.35 });
       }
     });
+    this.updateSelectedRouteCoordinates();
     this.systemStatusMsg.set(`TACTICAL PATH MODIFIED: SELECTED OPTION ${String.fromCharCode(65 + idx)}`);
   }
 
-  setInteractionMode(mode: 'START' | 'HIT') {
+  setInteractionMode(mode: 'START' | 'HIT' | 'WAYPOINT') {
     this.interactionMode.set(mode);
-    this.systemStatusMsg.set(`INTERACTION MODE CHANGED: SET ${mode === 'START' ? 'START POINT' : 'TARGET POINT'}`);
+    const modeLabel = mode === 'START' ? 'START POINT' : mode === 'HIT' ? 'TARGET POINT' : 'WAYPOINT';
+    this.systemStatusMsg.set(`INTERACTION MODE CHANGED: SET ${modeLabel}`);
+    if (mode === 'WAYPOINT') {
+      this.waypointsVisible = true;
+      this.redrawWaypoints();
+    }
     setTimeout(() => this.systemStatusMsg.set('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.2 GB AVAILABLE'), 3000);
+  }
+
+  addWaypoint(latlng: L.LatLng) {
+    const waypointNumber = this.waypoints().length + 1;
+    const waypoint = {
+      id: `WP-${waypointNumber.toString().padStart(2, '0')}`,
+      name: `Waypoint ${waypointNumber}`,
+      lat: latlng.lat,
+      lng: latlng.lng,
+      marker: undefined
+    };
+
+    this.waypoints.update(list => [...list, waypoint]);
+    this.createWaypointMarker(waypoint);
+    this.waypointsVisible = true;
+    this.redrawWaypoints();
+    this.systemStatusMsg.set(`WAYPOINT ${waypoint.id} ADDED`);
+    this.updateRoute();
+  }
+
+  removeWaypoint(index: number) {
+    const waypoint = this.waypoints()[index];
+    if (!waypoint) return;
+    if (waypoint.marker) {
+      this.waypointsLayer.removeLayer(waypoint.marker);
+    }
+    const newWaypoints = this.waypoints().filter((_, idx) => idx !== index).map((wp, idx) => {
+      const updated = { ...wp, id: `WP-${(idx + 1).toString().padStart(2, '0')}`, name: `Waypoint ${idx + 1}` };
+      if (updated.marker) {
+        updated.marker.bindTooltip(`${updated.id}`, { permanent: true, direction: 'top' });
+      }
+      return updated;
+    });
+    this.waypoints.set(newWaypoints);
+    this.redrawWaypoints();
+    this.systemStatusMsg.set(`WAYPOINT ${waypoint.id} REMOVED`);
+    this.updateRoute();
+  }
+
+  createWaypointMarker(waypoint: { id: string; name: string; lat: number; lng: number; marker?: L.Marker<any> }) {
+    if (!this.map) return;
+    const marker = L.marker([waypoint.lat, waypoint.lng], {
+      draggable: true
+    }).bindTooltip(`${waypoint.id}`, { permanent: true, direction: 'top' }).addTo(this.waypointsLayer);
+    marker.on('dragend', () => {
+      const pos = marker.getLatLng();
+      waypoint.lat = pos.lat;
+      waypoint.lng = pos.lng;
+      this.systemStatusMsg.set(`${waypoint.id} MOVED TO ${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}`);
+      this.updateRoute();
+    });
+    waypoint.marker = marker;
+  }
+
+  restoreWaypoint(waypointData: any) {
+    const waypoint = {
+      id: waypointData.id || `WP-${(this.waypoints().length + 1).toString().padStart(2, '0')}`,
+      name: waypointData.name || `Waypoint ${this.waypoints().length + 1}`,
+      lat: waypointData.lat,
+      lng: waypointData.lng,
+      marker: undefined
+    };
+    this.waypoints.update(list => [...list, waypoint]);
+    this.createWaypointMarker(waypoint);
+  }
+
+  redrawWaypoints() {
+    this.waypointsLayer.clearLayers();
+    if (!this.waypointsVisible) {
+      return;
+    }
+    this.waypoints().forEach((waypoint) => {
+      if (waypoint.marker) {
+        waypoint.marker.addTo(this.waypointsLayer);
+      } else {
+        this.createWaypointMarker(waypoint);
+      }
+    });
+    if (this.waypointsLayer.getLayers().length > 0) {
+      this.waypointsLayer.addTo(this.map);
+    }
+  }
+
+  getRoutePointList(start: L.LatLng, end: L.LatLng) {
+    const points = [start];
+    this.waypoints().forEach((waypoint) => {
+      points.push(new L.LatLng(waypoint.lat, waypoint.lng));
+    });
+    points.push(end);
+    return points;
+  }
+
+  buildOsrmWaypoints(start: L.LatLng, end: L.LatLng) {
+    return this.getRoutePointList(start, end)
+      .map(point => `${point.lng},${point.lat}`)
+      .join(';');
+  }
+
+  computeFlankPoint(start: L.LatLng, end: L.LatLng, factor: number, left: boolean) {
+    const latDiff = end.lat - start.lat;
+    const lngDiff = end.lng - start.lng;
+    const perpX = -lngDiff;
+    const perpY = latDiff;
+    const length = Math.sqrt(perpX * perpX + perpY * perpY);
+    if (length === 0) {
+      return new L.LatLng((start.lat + end.lat) / 2, (start.lng + end.lng) / 2);
+    }
+    const normX = perpX / length;
+    const normY = perpY / length;
+    const midLat = (start.lat + end.lat) / 2;
+    const midLng = (start.lng + end.lng) / 2;
+    const offset = factor * Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+    const direction = left ? 1 : -1;
+    return new L.LatLng(midLat + normY * offset * direction, midLng + normX * offset * direction);
+  }
+
+  updateSelectedRouteCoordinates() {
+    const selectedIndex = this.selectedRouteIndex();
+    const selectedRoute = this.routes[selectedIndex];
+    if (selectedRoute) {
+      this.selectedRouteCoordinates = selectedRoute.getLatLngs() as L.LatLng[];
+    } else {
+      this.selectedRouteCoordinates = [];
+    }
+  }
+
+  startJourney() {
+    if (!this.selectedRouteCoordinates || this.selectedRouteCoordinates.length === 0) {
+      this.systemStatusMsg.set('ERROR: NO ACTUAL ROUTE SELECTED FOR JOURNEY');
+      return;
+    }
+    if (this.journeyActive()) {
+      return;
+    }
+    this.journeyActive.set(true);
+    this.systemStatusMsg.set('JOURNEY STARTED: FOLLOWING SELECTED ROUTE');
+    if (this.journeyMarker) {
+      this.map.removeLayer(this.journeyMarker);
+    }
+    const start = this.selectedRouteCoordinates[0];
+    this.journeyMarker = L.marker(start, { icon: startIcon }).addTo(this.map).bindPopup('JOURNEY PROGRESS').openPopup();
+    let index = 0;
+    this.journeyTimer = setInterval(() => {
+      index += 1;
+      if (index >= this.selectedRouteCoordinates.length) {
+        this.stopJourney();
+        this.systemStatusMsg.set('JOURNEY COMPLETE. DESTINATION REACHED.');
+        return;
+      }
+      const nextPoint = this.selectedRouteCoordinates[index];
+      this.journeyMarker?.setLatLng(nextPoint);
+      if (index % 5 === 0) {
+        this.map.panTo(nextPoint, { animate: true, duration: 0.7 });
+      }
+    }, 800);
+  }
+
+  stopJourney() {
+    if (this.journeyTimer) {
+      clearInterval(this.journeyTimer);
+      this.journeyTimer = undefined;
+    }
+    this.journeyActive.set(false);
+    if (this.journeyMarker) {
+      this.map.removeLayer(this.journeyMarker);
+      this.journeyMarker = undefined;
+    }
+    this.systemStatusMsg.set('JOURNEY STOPPED');
+  }
+
+  computeSunTimes(lat: number, lng: number) {
+    const date = new Date();
+    const rad = Math.PI / 180;
+    const day = date.getUTCDate();
+    const month = date.getUTCMonth() + 1;
+    const year = date.getUTCFullYear();
+    const n1 = Math.floor(275 * month / 9);
+    const n2 = Math.floor((month + 9) / 12);
+    const n3 = (1 + Math.floor((year - 4 * Math.floor(year / 4) + 2) / 3));
+    const N = n1 - (n2 * n3) + day - 30;
+    const lngHour = lng / 15;
+
+    const tRise = N + ((6 - lngHour) / 24);
+    const tSet = N + ((18 - lngHour) / 24);
+
+    const M_rise = (0.9856 * tRise) - 3.289;
+    const M_set = (0.9856 * tSet) - 3.289;
+
+    const L_rise = (M_rise + (1.916 * Math.sin(rad * M_rise)) + (0.020 * Math.sin(rad * 2 * M_rise)) + 282.634) % 360;
+    const L_set = (M_set + (1.916 * Math.sin(rad * M_set)) + (0.020 * Math.sin(rad * 2 * M_set)) + 282.634) % 360;
+
+    const RA_rise = Math.atan(0.91764 * Math.tan(rad * L_rise)) / rad;
+    const RA_set = Math.atan(0.91764 * Math.tan(rad * L_set)) / rad;
+
+    const Lquadrant_rise = Math.floor(L_rise / 90) * 90;
+    const RAquadrant_rise = Math.floor(RA_rise / 90) * 90;
+    const RA_rise_corrected = (RA_rise + (Lquadrant_rise - RAquadrant_rise)) / 15;
+    const Lquadrant_set = Math.floor(L_set / 90) * 90;
+    const RAquadrant_set = Math.floor(RA_set / 90) * 90;
+    const RA_set_corrected = (RA_set + (Lquadrant_set - RAquadrant_set)) / 15;
+
+    const sinDec_rise = 0.39782 * Math.sin(rad * L_rise);
+    const cosDec_rise = Math.cos(Math.asin(sinDec_rise));
+    const sinDec_set = 0.39782 * Math.sin(rad * L_set);
+    const cosDec_set = Math.cos(Math.asin(sinDec_set));
+
+    const cosH_rise = (Math.cos(rad * 90.833) - (sinDec_rise * Math.sin(rad * lat))) / (cosDec_rise * Math.cos(rad * lat));
+    const cosH_set = (Math.cos(rad * 90.833) - (sinDec_set * Math.sin(rad * lat))) / (cosDec_set * Math.cos(rad * lat));
+
+    const H_rise = 360 - (Math.acos(cosH_rise) / rad);
+    const H_set = (Math.acos(cosH_set) / rad);
+
+    const T_rise = H_rise / 15 + RA_rise_corrected - (0.06571 * tRise) - 6.622;
+    const T_set = H_set / 15 + RA_set_corrected - (0.06571 * tSet) - 6.622;
+
+    let UT_rise = (T_rise - lngHour) % 24;
+    let UT_set = (T_set - lngHour) % 24;
+    if (UT_rise < 0) UT_rise += 24;
+    if (UT_set < 0) UT_set += 24;
+
+    const hrRise = Math.floor(UT_rise);
+    const minRise = Math.floor((UT_rise - hrRise) * 60);
+    const hrSet = Math.floor(UT_set);
+    const minSet = Math.floor((UT_set - hrSet) * 60);
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    this.sunTimes.set({
+      sunrise: `${pad(hrRise)}:${pad(minRise)}`,
+      sunset: `${pad(hrSet)}:${pad(minSet)}`,
+      date: date.toLocaleDateString()
+    });
   }
 
   setStartpoint(latlng: L.LatLng) {
@@ -427,6 +678,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     this.currentLat.set(latlng.lat.toFixed(4) + '° ' + (latlng.lat >= 0 ? 'N' : 'S'));
     this.currentLng.set(latlng.lng.toFixed(4) + '° ' + (latlng.lng >= 0 ? 'E' : 'W'));
     this.gpsStatus.set('MANUAL LOCK');
+    this.computeSunTimes(latlng.lat, latlng.lng);
 
     const popupContent = `
       <div style="font-family: monospace;">
@@ -481,6 +733,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   setEndpoint(latlng: L.LatLng) {
     this.targetLat.set(latlng.lat.toFixed(4) + '° ' + (latlng.lat >= 0 ? 'N' : 'S'));
     this.targetLng.set(latlng.lng.toFixed(4) + '° ' + (latlng.lng >= 0 ? 'E' : 'W'));
+    this.computeSunTimes(latlng.lat, latlng.lng);
 
     const structures = ['Civilian Compound', 'Industrial Facility', 'Communication Tower', 'Open Terrain', 'Abandoned Outpost'];
     const elevations = ['High Ground', 'Valley', 'Flat Terrain', 'Slope'];
@@ -520,33 +773,10 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
       // Calculate midpoints and flank offsets
       const latDiff = end.lat - start.lat;
       const lngDiff = end.lng - start.lng;
-      const distanceVal = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
-      
-      const nx = -lngDiff;
-      const ny = latDiff;
-      const length = Math.sqrt(nx * nx + ny * ny);
-      
-      let leftFlank = start;
-      let rightFlank = end;
-      
-      if (length > 0) {
-        const normX = nx / length;
-        const normY = ny / length;
-        const midLat = (start.lat + end.lat) / 2;
-        const midLng = (start.lng + end.lng) / 2;
-        
-        // Offset proportional to distance to create distinct flanking options
-        const offset = distanceVal * 0.25;
-
-        leftFlank = new L.LatLng(midLat + normY * offset, midLng + normX * offset);
-        rightFlank = new L.LatLng(midLat - normY * offset, midLng - normX * offset);
-      }
-
-      // Generate three queries:
-      // Option A: Direct road routing
-      // Option B: Road routing forced through Left Flank snapped waypoint
-      // Option C: Road routing forced through Right Flank snapped waypoint
-      const urlA = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
+      const waypointCoords = this.buildOsrmWaypoints(start, end);
+      const urlA = `https://router.project-osrm.org/route/v1/driving/${waypointCoords}?overview=full&geometries=geojson`;
+      const leftFlank = this.computeFlankPoint(start, end, 0.25, true);
+      const rightFlank = this.computeFlankPoint(start, end, 0.25, false);
       const urlB = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${leftFlank.lng},${leftFlank.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
       const urlC = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${rightFlank.lng},${rightFlank.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
 
@@ -647,6 +877,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
         this.routeOptions.set(newOptions);
         this.selectedRouteIndex.set(0);
         this.selectRouteOption(0);
+        this.updateSelectedRouteCoordinates();
 
         const group = new L.FeatureGroup(this.routes);
         this.map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 16 });
@@ -911,6 +1142,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
         const offlineData = {
           startPoint: start,
           hitPoint: end,
+          waypoints: this.waypoints().map(wp => ({ id: wp.id, name: wp.name, lat: wp.lat, lng: wp.lng })),
           routes: serializedRoutes,
           routeOptions: this.routeOptions(),
           selectedRouteIndex: this.selectedRouteIndex(),

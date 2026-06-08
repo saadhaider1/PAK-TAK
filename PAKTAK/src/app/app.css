@@ -265,6 +265,101 @@
   border-color: var(--military-olive-light);
 }
 
+.toggle-mode-group,
+.mode-toggle-group {
+  display: flex;
+  gap: 5px;
+}
+
+.toggle-mode-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #fff;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.toggle-mode-btn.active {
+  background: var(--military-olive);
+  border-color: var(--military-olive-light);
+}
+
+.toggle-mode-btn.waypoint-mode {
+  color: #00d1ff;
+}
+
+.sun-times {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.sun-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.sun-row strong {
+  color: #ffd700;
+}
+
+.waypoint-list-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.waypoint-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.waypoint-name {
+  color: #9acd32;
+  font-weight: 700;
+}
+
+.waypoint-coord {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  flex: 1;
+  margin-left: 8px;
+}
+
+.remove-wp-btn {
+  background: transparent;
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.remove-wp-btn:hover {
+  background: rgba(255,68,68,0.15);
+}
+
 /* Target Cards */
 .target-card {
   background: rgba(255, 255, 255, 0.03);

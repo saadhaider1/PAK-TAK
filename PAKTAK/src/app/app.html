@@ -108,6 +108,10 @@
               <div class="lat target-coord mt-2">TARGET LAT: {{ targetLat() }}</div>
               <div class="lng target-coord">TARGET LNG: {{ targetLng() }}</div>
             </div>
+            <div class="sun-times">
+              <div class="sun-row"><span>SUNRISE</span><strong>{{ sunTimes().sunrise }}</strong></div>
+              <div class="sun-row"><span>SUNSET</span><strong>{{ sunTimes().sunset }}</strong></div>
+            </div>
           </div>
         </div>
       </aside>
@@ -131,6 +135,9 @@
             </button>
             <button [class.active]="interactionMode() === 'HIT'" (click)="setInteractionMode('HIT')" class="toggle-mode-btn hit-mode">
               SET TARGET
+            </button>
+            <button [class.active]="interactionMode() === 'WAYPOINT'" (click)="setInteractionMode('WAYPOINT')" class="toggle-mode-btn waypoint-mode">
+              ADD WAYPOINT
             </button>
           </div>
         </div>
@@ -213,6 +220,15 @@
             </div>
           </div>
 
+          <div class="waypoint-list-panel" *ngIf="waypoints().length > 0">
+            <h3>Waypoints</h3>
+            <div class="waypoint-item" *ngFor="let wp of waypoints(); let idx = index">
+              <span class="waypoint-name">{{ wp.id }}</span>
+              <span class="waypoint-coord">{{ wp.lat.toFixed(4) }}, {{ wp.lng.toFixed(4) }}</span>
+              <button class="remove-wp-btn" (click)="removeWaypoint(idx)">REMOVE</button>
+            </div>
+          </div>
+
           <div class="terrain-analysis">
             <h3>Terrain Analysis</h3>
             <div class="analysis-stats">
@@ -240,6 +256,8 @@
         <button class="action-btn danger" (click)="triggerSOS()">SOS</button>
         <button class="action-btn" (click)="openComms()">COMMS</button>
         <button class="action-btn" (click)="toggleWaypoints()">WAYPOINTS</button>
+        <button class="action-btn" [disabled]="journeyActive()" (click)="startJourney()">START JOURNEY</button>
+        <button class="action-btn" *ngIf="journeyActive()" (click)="stopJourney()">STOP JOURNEY</button>
         <button class="action-btn" (click)="offlineSync()">OFFLINE SYNC</button>
       </div>
       <div class="status-msg">
