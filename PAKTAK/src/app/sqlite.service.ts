@@ -16,14 +16,36 @@ export class SqliteService {
       this.db = JSON.parse(data);
     } else {
       this.db = {
-        users: []
+        users: [this.createDefaultUser()]
       };
+      this.saveDatabase();
+    }
+
+    if (!this.db['users']) {
+      this.db['users'] = [];
+    }
+
+    const defaultExists = this.db['users'].some(
+      u => u.username.toLowerCase() === 'saad'
+    );
+    if (!defaultExists) {
+      this.db['users'].push(this.createDefaultUser());
       this.saveDatabase();
     }
   }
 
   private saveDatabase() {
     localStorage.setItem('pak_tak_sqlite.db', JSON.stringify(this.db));
+  }
+
+  private createDefaultUser() {
+    return {
+      id: 1,
+      username: 'saad',
+      password: 'saad',
+      clearance: 'LEVEL-5 COMMAND',
+      registeredAt: new Date().toISOString()
+    };
   }
 
   /**
@@ -65,11 +87,11 @@ export class SqliteService {
       if (upperQuery.includes('WHERE USERNAME = ? AND PASSWORD = ?')) {
         const username = params[0];
         const password = params[1];
-        return this.db['users'].filter(u => u.username === username && u.password === password);
+        return this.db['users'].filter(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
       }
       if (upperQuery.includes('WHERE USERNAME = ?')) {
         const username = params[0];
-        return this.db['users'].filter(u => u.username === username);
+        return this.db['users'].filter(u => u.username.toLowerCase() === username.toLowerCase());
       }
       return this.db['users'];
     }

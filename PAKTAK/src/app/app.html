@@ -91,12 +91,8 @@
 
           <div class="mission-info">
             <div class="info-row" style="align-items: center;">
-              <span class="label">CODE:</span>
-              <input type="text" [(ngModel)]="missionBriefing.codeName" (ngModelChange)="saveMissionCodeName()" class="editable-code-input" title="Click to edit Mission Code Name" />
-            </div>
-            <div class="info-row">
-              <span class="label">CLEARANCE:</span>
-              <span class="value highlight" style="color: #ffd700;">{{ currentUser()?.clearance }}</span>
+              <span class="label">OPERATION CODE:</span>
+              <input type="text" [(ngModel)]="missionBriefing.codeName" (ngModelChange)="saveMissionCodeName()" class="editable-code-input" placeholder="ENTER OPERATION CODE" title="Click to edit Mission Code Name" />
             </div>
           </div>
 
@@ -215,7 +211,6 @@
               <div class="opt-details">
                 <div class="stat"><span>Dist:</span> <b>{{ opt.distance }}</b></div>
                 <div class="stat"><span>ETA:</span> <b>{{ opt.eta }}</b></div>
-                <div class="stat"><span>Threat:</span> <b [style.color]="opt.threatColor">{{ opt.threat }}</b></div>
               </div>
             </div>
           </div>
@@ -259,6 +254,7 @@
         <button class="action-btn" [disabled]="journeyActive()" (click)="startJourney()">START JOURNEY</button>
         <button class="action-btn" *ngIf="journeyActive()" (click)="stopJourney()">STOP JOURNEY</button>
         <button class="action-btn" (click)="offlineSync()">OFFLINE SYNC</button>
+        <button class="action-btn" *ngIf="hasOfflineMap()" (click)="viewOfflineMap()">VIEW OFFLINE MAP</button>
       </div>
       <div class="status-msg">
         {{ systemStatusMsg() }}

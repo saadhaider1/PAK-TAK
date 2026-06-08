@@ -78,8 +78,9 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   public sunTimes = signal({ sunrise: '--:--', sunset: '--:--', date: 'TODAY' });
   public journeyActive = signal(false);
   public journeyMarker?: L.Marker;
-  public journeyTimer?: any;
+  public journeyPath?: L.Polyline;
   public selectedRouteCoordinates: L.LatLng[] = [];
+  public hasOfflineMap = signal(false);
 
   public hasStartAndEnd(): boolean {
     return !!this.startMarker && !!this.endMarker;
@@ -109,6 +110,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
 
   private timeInterval: any;
   private watchId?: number;
+  private journeyWatchId?: number;
 
   ngOnInit() {
     this.updateTime();
@@ -119,6 +121,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     if (savedCode) {
       this.missionBriefing.codeName = savedCode;
     }
+    this.hasOfflineMap.set(!!localStorage.getItem('paktak_offline_cache'));
 
     // Splash screen timer
     setTimeout(() => {
@@ -179,7 +182,11 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
         this.switchToLogin();
       }, 2000);
     } catch (e: any) {
-      this.authError.set(e.message || 'Registration failed');
+      if (e.message?.includes('UNIQUE constraint failed: users.username')) {
+        this.authError.set('SQLITE_CONSTRAINT: Callsign already exists. Use ACCESS ACCOUNT to login.');
+      } else {
+        this.authError.set(e.message || 'Registration failed');
+      }
     }
   }
 
@@ -354,8 +361,23 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
             this.missionBriefing = offlineData.missionBriefing;
           }
 
+          this.offlineSyncLayer.clearLayers();
+          const offlineBounds = offlineData.offlineBounds
+            ? L.latLngBounds(
+                [offlineData.offlineBounds.southWest.lat, offlineData.offlineBounds.southWest.lng],
+                [offlineData.offlineBounds.northEast.lat, offlineData.offlineBounds.northEast.lng]
+              )
+            : this.buildOfflineBounds();
+          L.rectangle(offlineBounds, {
+            color: '#ffffff',
+            weight: 2,
+            fillOpacity: 0.12,
+            dashArray: '0'
+          }).addTo(this.offlineSyncLayer).bindPopup('<b>Offline Area Cached</b><br>Start, target and waypoints restored.');
+
           // Center view on restored coordinates
-          const group = new L.FeatureGroup(this.routes.length > 0 ? this.routes : [this.startMarker, this.endMarker]);
+          const groupLayers: L.Layer[] = [this.startMarker, this.endMarker, ...this.waypointsLayer.getLayers(), ...this.routes];
+          const group = new L.FeatureGroup(groupLayers);
           setTimeout(() => {
             this.map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 16 });
           }, 100);
@@ -372,13 +394,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
         (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-          
-          this.gpsStatus.set('LOCKED');
-          this.currentLatNum = lat;
-          this.currentLngNum = lng;
-          this.currentLat.set(lat.toFixed(4) + '° ' + (lat >= 0 ? 'N' : 'S'));
-          this.currentLng.set(lng.toFixed(4) + '° ' + (lng >= 0 ? 'E' : 'W'));
-          this.computeSunTimes(lat, lng);
+          this.updateCurrentPosition(lat, lng, true);
 
           const latlng = new L.LatLng(lat, lng);
           this.map.setView(latlng, 15);
@@ -401,19 +417,33 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
       this.watchId = navigator.geolocation.watchPosition((position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-          this.currentLatNum = lat;
-          this.currentLngNum = lng;
-          this.currentLat.set(lat.toFixed(4) + '° ' + (lat >= 0 ? 'N' : 'S'));
-          this.currentLng.set(lng.toFixed(4) + '° ' + (lng >= 0 ? 'E' : 'W'));
+          this.updateCurrentPosition(lat, lng, true);
           const latlng = new L.LatLng(lat, lng);
           if (this.startMarker) {
             this.startMarker.setLatLng(latlng);
             this.updateRoute();
           }
-      });
+          if (this.journeyActive()) {
+            this.updateJourneyPointer(latlng);
+          }
+      }, (error) => {
+        console.error("Geolocation watch error:", error);
+        this.gpsStatus.set('ERROR');
+      }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
     } else {
       this.gpsStatus.set('UNAVAILABLE');
     }
+  }
+
+  updateCurrentPosition(lat: number, lng: number, locked: boolean) {
+    if (locked) {
+      this.gpsStatus.set('LOCKED');
+    }
+    this.currentLatNum = lat;
+    this.currentLngNum = lng;
+    this.currentLat.set(lat.toFixed(4) + '° ' + (lat >= 0 ? 'N' : 'S'));
+    this.currentLng.set(lng.toFixed(4) + '° ' + (lng >= 0 ? 'E' : 'W'));
+    this.computeSunTimes(lat, lng);
   }
 
   selectRouteOption(idx: number) {
@@ -522,6 +552,18 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
+  buildOfflineBounds() {
+    if (!this.startMarker || !this.endMarker) {
+      return L.latLngBounds([0, 0], [0, 0]);
+    }
+    const points: L.LatLngExpression[] = [
+      this.startMarker.getLatLng(),
+      this.endMarker.getLatLng(),
+      ...this.waypoints().map(wp => [wp.lat, wp.lng] as L.LatLngExpression)
+    ];
+    return L.latLngBounds(points).pad(0.2);
+  }
+
   getRoutePointList(start: L.LatLng, end: L.LatLng) {
     const points = [start];
     this.waypoints().forEach((waypoint) => {
@@ -566,45 +608,76 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   }
 
   startJourney() {
-    if (!this.selectedRouteCoordinates || this.selectedRouteCoordinates.length === 0) {
-      this.systemStatusMsg.set('ERROR: NO ACTUAL ROUTE SELECTED FOR JOURNEY');
+    if (!navigator.geolocation) {
+      this.systemStatusMsg.set('ERROR: GPS UNAVAILABLE. REAL-TIME JOURNEY CANNOT START.');
       return;
     }
     if (this.journeyActive()) {
       return;
     }
     this.journeyActive.set(true);
-    this.systemStatusMsg.set('JOURNEY STARTED: FOLLOWING SELECTED ROUTE');
-    if (this.journeyMarker) {
-      this.map.removeLayer(this.journeyMarker);
+    this.systemStatusMsg.set('JOURNEY STARTED: TRACKING LIVE OPERATIVE MOVEMENT');
+    if (this.currentLatNum && this.currentLngNum) {
+      this.updateJourneyPointer(new L.LatLng(this.currentLatNum, this.currentLngNum));
     }
-    const start = this.selectedRouteCoordinates[0];
-    this.journeyMarker = L.marker(start, { icon: startIcon }).addTo(this.map).bindPopup('JOURNEY PROGRESS').openPopup();
-    let index = 0;
-    this.journeyTimer = setInterval(() => {
-      index += 1;
-      if (index >= this.selectedRouteCoordinates.length) {
-        this.stopJourney();
-        this.systemStatusMsg.set('JOURNEY COMPLETE. DESTINATION REACHED.');
-        return;
+
+    this.journeyWatchId = navigator.geolocation.watchPosition((position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const latlng = new L.LatLng(lat, lng);
+      this.updateCurrentPosition(lat, lng, true);
+      this.updateJourneyPointer(latlng);
+      if (this.startMarker) {
+        this.startMarker.setLatLng(latlng);
+        this.updateRoute();
       }
-      const nextPoint = this.selectedRouteCoordinates[index];
-      this.journeyMarker?.setLatLng(nextPoint);
-      if (index % 5 === 0) {
-        this.map.panTo(nextPoint, { animate: true, duration: 0.7 });
+    }, (error) => {
+      console.error("Journey geolocation error:", error);
+      this.gpsStatus.set('ERROR');
+      this.systemStatusMsg.set('ERROR: LIVE JOURNEY GPS TRACKING FAILED');
+      this.stopJourney();
+    }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+  }
+
+  updateJourneyPointer(latlng: L.LatLng) {
+    if (!this.map) {
+      return;
+    }
+    if (!this.journeyMarker) {
+      this.journeyMarker = L.marker(latlng, { icon: startIcon }).addTo(this.map).bindPopup('LIVE OPERATIVE POSITION').openPopup();
+    } else {
+      this.journeyMarker.setLatLng(latlng);
+    }
+    if (!this.journeyPath) {
+      this.journeyPath = L.polyline([latlng], {
+        color: '#ffd700',
+        weight: 4,
+        opacity: 0.95
+      }).addTo(this.map);
+    } else {
+      const path = this.journeyPath.getLatLngs() as L.LatLng[];
+      const last = path[path.length - 1];
+      if (!last || last.distanceTo(latlng) >= 1) {
+        path.push(latlng);
+        this.journeyPath.setLatLngs(path);
       }
-    }, 800);
+    }
+    this.map.panTo(latlng, { animate: true, duration: 0.7 });
   }
 
   stopJourney() {
-    if (this.journeyTimer) {
-      clearInterval(this.journeyTimer);
-      this.journeyTimer = undefined;
+    if (this.journeyWatchId !== undefined) {
+      navigator.geolocation.clearWatch(this.journeyWatchId);
+      this.journeyWatchId = undefined;
     }
     this.journeyActive.set(false);
     if (this.journeyMarker) {
       this.map.removeLayer(this.journeyMarker);
       this.journeyMarker = undefined;
+    }
+    if (this.journeyPath) {
+      this.map.removeLayer(this.journeyPath);
+      this.journeyPath = undefined;
     }
     this.systemStatusMsg.set('JOURNEY STOPPED');
   }
@@ -665,9 +738,18 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     const minSet = Math.floor((UT_set - hrSet) * 60);
 
     const pad = (n: number) => n.toString().padStart(2, '0');
+    const timezoneOffset = Math.round(lng / 15);
+    const toLocalTime = (utcHour: number, utcMinute: number) => {
+      let totalMinutes = utcHour * 60 + utcMinute + timezoneOffset * 60;
+      totalMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+      const hour = Math.floor(totalMinutes / 60);
+      const minute = totalMinutes % 60;
+      return `${pad(hour)}:${pad(minute)}`;
+    };
+
     this.sunTimes.set({
-      sunrise: `${pad(hrRise)}:${pad(minRise)}`,
-      sunset: `${pad(hrSet)}:${pad(minSet)}`,
+      sunrise: toLocalTime(hrRise, minRise),
+      sunset: toLocalTime(hrSet, minSet),
       date: date.toLocaleDateString()
     });
   }
@@ -1108,11 +1190,11 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
-    this.systemStatusMsg.set('DOWNLOADING MAP TILES: START & HIT POINT (0%)...');
+    this.systemStatusMsg.set('DOWNLOADING MAP TILES: START, TARGET & WAYPOINTS (0%)...');
     
     const start = this.startMarker.getLatLng();
     const end = this.endMarker.getLatLng();
-    const bounds = L.latLngBounds(start, end).pad(0.2); 
+    const bounds = this.buildOfflineBounds(); 
     
     this.offlineSyncLayer.clearLayers();
     const rect = L.rectangle(bounds, { color: '#00ff00', weight: 2, fillOpacity: 0.1, dashArray: '10, 10' }).addTo(this.offlineSyncLayer);
@@ -1121,7 +1203,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     let progress = 0;
     const interval = setInterval(() => {
       progress += 20;
-      this.systemStatusMsg.set(`DOWNLOADING MAP TILES: START & HIT POINT (${progress}%)...`);
+      this.systemStatusMsg.set(`DOWNLOADING MAP TILES: START, TARGET & WAYPOINTS (${progress}%)...`);
       if (progress >= 100) {
         clearInterval(interval);
         
@@ -1148,17 +1230,61 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
           selectedRouteIndex: this.selectedRouteIndex(),
           terrainAnalysis: this.terrainAnalysis(),
           missionBriefing: this.missionBriefing,
+          offlineBounds: {
+            southWest: bounds.getSouthWest(),
+            northEast: bounds.getNorthEast()
+          },
           timestamp: new Date().toISOString()
         };
         localStorage.setItem('paktak_offline_cache', JSON.stringify(offlineData));
+        this.hasOfflineMap.set(true);
         console.log('[OFFLINE CACHE] Saved complete mission & route details to local storage:', offlineData);
 
-        this.systemStatusMsg.set('OFFLINE SYNC COMPLETE. TILES, ROUTES & TERRAIN CACHED FOR OFFLINE USE.');
+        this.systemStatusMsg.set('OFFLINE SYNC COMPLETE. START, TARGET, WAYPOINTS & ROUTES CACHED FOR OFFLINE USE.');
         rect.setStyle({ color: '#ffffff', fillOpacity: 0.2, dashArray: '0' });
-        rect.bindPopup('<b>Offline Area Cached</b><br>Points, Routes & Terrain saved successfully.').openPopup();
+        rect.bindPopup('<b>Offline Area Cached</b><br>Start, target, waypoints and routes saved successfully.').openPopup();
         setTimeout(() => this.systemStatusMsg.set('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.1 GB AVAILABLE'), 5000);
       }
     }, 500);
+  }
+
+  viewOfflineMap() {
+    const cached = localStorage.getItem('paktak_offline_cache');
+    if (!cached) {
+      this.hasOfflineMap.set(false);
+      this.systemStatusMsg.set('ERROR: NO OFFLINE SYNCED MAP FOUND');
+      setTimeout(() => this.systemStatusMsg.set('SYSTEM STATUS: OPTIMAL | OFFLINE STORAGE: 4.2 GB AVAILABLE'), 3000);
+      return;
+    }
+
+    try {
+      const offlineData = JSON.parse(cached);
+      if (!offlineData.startPoint || !offlineData.hitPoint) {
+        this.systemStatusMsg.set('ERROR: OFFLINE MAP CACHE IS INCOMPLETE');
+        return;
+      }
+
+      const bounds = offlineData.offlineBounds
+        ? L.latLngBounds(
+            [offlineData.offlineBounds.southWest.lat, offlineData.offlineBounds.southWest.lng],
+            [offlineData.offlineBounds.northEast.lat, offlineData.offlineBounds.northEast.lng]
+          )
+        : this.buildOfflineBounds();
+
+      this.offlineSyncLayer.clearLayers();
+      L.rectangle(bounds, {
+        color: '#ffffff',
+        weight: 2,
+        fillOpacity: 0.15,
+        dashArray: '0'
+      }).addTo(this.offlineSyncLayer).bindPopup('<b>Viewing Offline Synced Map</b><br>Cached start, target, waypoints and route area.').openPopup();
+
+      this.map.fitBounds(bounds, { maxZoom: 16 });
+      this.systemStatusMsg.set(`OFFLINE MAP VIEW ACTIVE: ${offlineData.missionBriefing?.codeName || 'SAVED OPERATION'}`);
+    } catch (error) {
+      console.error('Failed to view offline map:', error);
+      this.systemStatusMsg.set('ERROR: FAILED TO LOAD OFFLINE SYNCED MAP');
+    }
   }
 
   selectTarget(target: any) {
