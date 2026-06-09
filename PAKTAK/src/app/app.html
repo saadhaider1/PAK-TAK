@@ -124,6 +124,10 @@
               <span class="btn-text">SEARCH</span>
             </button>
             <input type="text" #searchInput placeholder="SEARCH LOCATION (E.G. TOKYO, PARIS)..." (keyup.enter)="searchLocation(searchInput.value)" />
+            <div class="search-actions">
+              <button (click)="searchLocation(searchInput.value, 'START')" class="search-action-btn set-start-btn">SET START</button>
+              <button (click)="searchLocation(searchInput.value, 'HIT')" class="search-action-btn set-hit-btn">SET TARGET</button>
+            </div>
           </div>
           <div class="mode-toggle-group">
             <button [class.active]="interactionMode() === 'START'" (click)="setInteractionMode('START')" class="toggle-mode-btn start-mode">
