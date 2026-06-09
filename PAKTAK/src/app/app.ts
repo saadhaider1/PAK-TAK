@@ -375,18 +375,6 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
           }
 
           this.offlineSyncLayer.clearLayers();
-          const offlineBounds = offlineData.offlineBounds
-            ? L.latLngBounds(
-                [offlineData.offlineBounds.southWest.lat, offlineData.offlineBounds.southWest.lng],
-                [offlineData.offlineBounds.northEast.lat, offlineData.offlineBounds.northEast.lng]
-              )
-            : this.buildOfflineBounds();
-          L.rectangle(offlineBounds, {
-            color: '#ffffff',
-            weight: 2,
-            fillOpacity: 0.12,
-            dashArray: '0'
-          }).addTo(this.offlineSyncLayer).bindPopup('<b>Offline Area Cached</b><br>Start, target and waypoints restored.');
 
           // Center view on restored coordinates
           const groupLayers: L.Layer[] = [this.startMarker, this.endMarker, ...this.waypointsLayer.getLayers(), ...this.routes];
