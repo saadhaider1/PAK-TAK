@@ -115,11 +115,11 @@
       <!-- Center: Tactical Map Viewport -->
       <section class="map-viewport">
         <!-- Search & Mode Panel -->
-        <!-- Two Aligned Classy HUD Search Bars (Start & Target) -->
+        <!-- Three Aligned Classy HUD Search & Mode Bars (Start, Target & Waypoint) -->
         <div class="map-search-bars-wrapper">
-          <!-- Start Location Search Bar -->
-          <div class="search-input-wrapper start-search-wrapper">
-            <button (click)="searchLocation(startSearchInput.value, 'START')" class="search-btn start-search-btn" title="Set Start Position">
+          <!-- Start Location Search & Mode Bar -->
+          <div class="search-input-wrapper start-search-wrapper" [class.active-mode]="interactionMode() === 'START'">
+            <button (click)="setInteractionMode('START'); searchLocation(startSearchInput.value, 'START')" class="search-btn start-search-btn" title="Set Start Position (Click Map or Search)">
               <span class="search-indicator-dot"></span>
               <svg class="search-svg" viewBox="0 0 24 24" width="16" height="16">
                 <path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-9.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -134,9 +134,9 @@
             <div class="connector-line"></div>
           </div>
 
-          <!-- Target/Hit Location Search Bar -->
-          <div class="search-input-wrapper target-search-wrapper">
-            <button (click)="searchLocation(targetSearchInput.value, 'HIT')" class="search-btn target-search-btn" title="Set Target Position">
+          <!-- Target/Hit Location Search & Mode Bar -->
+          <div class="search-input-wrapper target-search-wrapper" [class.active-mode]="interactionMode() === 'HIT'">
+            <button (click)="setInteractionMode('HIT'); searchLocation(targetSearchInput.value, 'HIT')" class="search-btn target-search-btn" title="Set Target Position (Click Map or Search)">
               <span class="search-indicator-dot"></span>
               <svg class="search-svg" viewBox="0 0 24 24" width="16" height="16">
                 <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-4.43-7-8.38V11h2v.5c0 2.76 2.24 5 5 5v2.43zm-1-4.43c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5zm5-4h-2v-.5c0-2.76-2.24-5-5-5V4.07c3.95.49 7 4.43 7 8.38v.05z"/>
@@ -145,18 +145,24 @@
             </button>
             <input type="text" #targetSearchInput placeholder="SEARCH HIT TARGET..." (keyup.enter)="searchLocation(targetSearchInput.value, 'HIT')" />
           </div>
-        </div>
-          <div class="mode-toggle-group">
-            <button [class.active]="interactionMode() === 'START'" (click)="setInteractionMode('START')" class="toggle-mode-btn start-mode">
-              SET START
-            </button>
-            <button [class.active]="interactionMode() === 'HIT'" (click)="setInteractionMode('HIT')" class="toggle-mode-btn hit-mode">
-              SET TARGET
-            </button>
-            <button [class.active]="interactionMode() === 'WAYPOINT'" (click)="setInteractionMode('WAYPOINT')" class="toggle-mode-btn waypoint-mode">
-              ADD WAYPOINT
-            </button>
+
+          <!-- Connecting Animated Vector Line -->
+          <div class="search-bar-connector">
+            <div class="connector-line waypoint-connector"></div>
           </div>
+
+          <!-- Waypoint Search & Mode Bar -->
+          <div class="search-input-wrapper waypoint-search-wrapper" [class.active-mode]="interactionMode() === 'WAYPOINT'">
+            <button (click)="setInteractionMode('WAYPOINT'); searchLocation(waypointSearchInput.value, 'WAYPOINT')" class="search-btn waypoint-search-btn" title="Add Waypoint (Click Map or Search)">
+              <span class="search-indicator-dot"></span>
+              <svg class="search-svg" viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z"/>
+              </svg>
+              <span class="btn-text">WAYPOINT</span>
+            </button>
+            <input type="text" #waypointSearchInput placeholder="SEARCH & ADD WAYPOINT..." (keyup.enter)="searchLocation(waypointSearchInput.value, 'WAYPOINT')" />
+          </div>
+        </div>
 
         <div class="map-overlay-top">
           <div class="compass">

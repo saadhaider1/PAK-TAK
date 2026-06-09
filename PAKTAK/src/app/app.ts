@@ -851,7 +851,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     this.updateRoute();
   }
 
-  searchLocation(query: string, forceTargetMode?: 'START' | 'HIT') {
+  searchLocation(query: string, forceTargetMode?: 'START' | 'HIT' | 'WAYPOINT') {
     if (!query) return;
     this.systemStatusMsg.set('CONNECTING TO GEOLOCATION DATA SERVICE...');
     
@@ -870,6 +870,8 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
           const mode = forceTargetMode || this.interactionMode();
           if (mode === 'START') {
             this.setStartpoint(latlng);
+          } else if (mode === 'WAYPOINT') {
+            this.addWaypoint(latlng);
           } else {
             this.setEndpoint(latlng);
           }

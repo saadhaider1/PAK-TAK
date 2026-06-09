@@ -793,6 +793,33 @@ li .bullet { color: var(--military-olive-light); }
   border-right: 1px solid rgba(255, 68, 68, 0.3);
 }
 
+/* Custom styling for Waypoint Search Bar */
+.waypoint-search-wrapper {
+  border: 1px solid rgba(0, 191, 255, 0.45);
+}
+
+.waypoint-search-wrapper:hover,
+.waypoint-search-wrapper:focus-within {
+  width: 320px;
+  max-width: 320px;
+  border-radius: 8px;
+  border-color: #00bfff;
+  box-shadow: 
+    0 0 15px rgba(0, 191, 255, 0.35),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1),
+    0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+.waypoint-search-btn {
+  color: #00bfff !important;
+}
+
+.waypoint-search-wrapper:hover .waypoint-search-btn,
+.waypoint-search-wrapper:focus-within .waypoint-search-btn {
+  background: rgba(0, 191, 255, 0.15) !important;
+  border-right: 1px solid rgba(0, 191, 255, 0.3);
+}
+
 /* Search Indicators */
 .search-indicator-dot {
   width: 6px;
@@ -811,6 +838,45 @@ li .bullet { color: var(--military-olive-light); }
 .target-search-wrapper .search-indicator-dot {
   background: #ff4444;
   box-shadow: 0 0 6px #ff4444;
+}
+
+.waypoint-search-wrapper .search-indicator-dot {
+  background: #00bfff;
+  box-shadow: 0 0 6px #00bfff;
+}
+
+/* Active placement mode glowing highlight for search bubbles */
+.start-search-wrapper.active-mode {
+  border-color: #32cd32 !important;
+  box-shadow: 
+    0 0 15px rgba(50, 205, 50, 0.5),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1),
+    0 0 5px rgba(50, 205, 50, 0.3);
+}
+
+.target-search-wrapper.active-mode {
+  border-color: #ff4444 !important;
+  box-shadow: 
+    0 0 15px rgba(255, 68, 68, 0.5),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1),
+    0 0 5px rgba(255, 68, 68, 0.3);
+}
+
+.waypoint-search-wrapper.active-mode {
+  border-color: #00bfff !important;
+  box-shadow: 
+    0 0 15px rgba(0, 191, 255, 0.5),
+    inset 0 1px 2px rgba(255, 255, 255, 0.1),
+    0 0 5px rgba(0, 191, 255, 0.3);
+}
+
+.active-mode .search-indicator-dot {
+  animation: indicatorPulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes indicatorPulse {
+  0% { transform: scale(0.85); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 10px currentColor; }
 }
 
 /* Connector Line with radar scan animation */
@@ -919,61 +985,6 @@ li .bullet { color: var(--military-olive-light); }
 
 .search-input-wrapper input::placeholder {
   color: rgba(220, 220, 220, 0.5);
-}
-
-.mode-toggle-group {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1001; /* Must sit on top of Leaflet layers & controls */
-  display: flex;
-  gap: 5px;
-  background: rgba(10, 15, 10, 0.65); /* Increased opacity for premium readability */
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-  padding: 6px;
-  border-radius: 8px;
-  border: 1px solid rgba(154, 205, 50, 0.4); /* Brighter tactical border */
-  box-shadow: 
-    inset 0 1px 1px rgba(255, 255, 255, 0.05),
-    0 8px 32px 0 rgba(0, 0, 0, 0.5);
-  pointer-events: auto;
-}
-
-.toggle-mode-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: rgba(220, 220, 220, 0.6);
-  padding: 6px 14px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
-}
-
-.toggle-mode-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.toggle-mode-btn.active.start-mode {
-  background: rgba(34, 139, 34, 0.3);
-  border-color: rgba(154, 205, 50, 0.6);
-  color: var(--accent-green);
-  box-shadow: 0 0 10px rgba(154, 205, 50, 0.4);
-  text-shadow: 0 0 5px rgba(154, 205, 50, 0.5);
-}
-
-.toggle-mode-btn.active.hit-mode {
-  background: rgba(255, 68, 68, 0.3);
-  border-color: rgba(255, 68, 68, 0.6);
-  color: #ff5555;
-  box-shadow: 0 0 10px rgba(255, 68, 68, 0.4);
-  text-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
 }
 
 /* Route Option Cards styling */
