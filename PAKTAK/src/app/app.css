@@ -327,11 +327,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   background: rgba(0,0,0,0.25);
   border: 1px solid rgba(255,255,255,0.04);
   padding: 10px;
   border-radius: 4px;
+}
+
+.waypoint-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.waypoint-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .waypoint-name {
@@ -342,8 +355,15 @@
 .waypoint-coord {
   font-size: 0.75rem;
   color: var(--text-secondary);
-  flex: 1;
-  margin-left: 8px;
+}
+
+.waypoint-dist {
+  font-size: 0.72rem;
+  color: var(--military-olive-light);
+}
+
+.waypoint-dist strong {
+  color: var(--hazard-yellow);
 }
 
 .remove-wp-btn {
@@ -360,43 +380,63 @@
   background: rgba(255,68,68,0.15);
 }
 
-/* Target Cards */
-.target-card {
+/* Vector Panel */
+.vector-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);
-  padding: 12px;
-  margin-bottom: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
   border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.target-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--military-olive-light);
-}
-
-.target-header {
+.vector-header {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 8px;
+  align-items: center;
+}
+
+.vector-title {
+  color: var(--hazard-yellow);
+  font-family: 'Orbitron', sans-serif;
   font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 1px;
 }
 
-.target-header .id { color: var(--accent-green); font-weight: bold; }
-.target-header .type { font-size: 0.7rem; color: var(--text-secondary); }
-
-.target-body .coord { font-size: 0.7rem; margin-bottom: 5px; }
-.target-body .status { 
-  font-size: 0.65rem; 
-  text-transform: uppercase;
-  color: var(--military-olive-light);
+.vector-metric-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.target-body .status.alert { color: var(--hazard-yellow); animation: blink 1s infinite; }
+.vector-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed rgba(85, 107, 47, 0.3);
+  border-radius: 4px;
+}
 
-@keyframes blink {
-  50% { opacity: 0.5; }
+.metric-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-weight: bold;
+}
+
+.metric-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.95rem;
+  font-weight: bold;
+}
+
+.metric-value.highlighting {
+  color: var(--accent-green);
+  text-shadow: 0 0 5px rgba(154, 205, 50, 0.5);
 }
 
 /* Bottom Bar */
@@ -1513,6 +1553,53 @@ li .bullet { color: var(--military-olive-light); }
   to {
     opacity: 1;
     transform: translate(-50%, 0);
+  }
+}
+
+/* Custom Pulsing Journey Pointer Style */
+.tactical-journey-pointer-container {
+  background: none !important;
+  border: none !important;
+}
+
+.pulsing-pointer {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: none;
+}
+
+.pointer-arrow {
+  color: #ffd700;
+  font-size: 1.4rem;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 2px #000;
+  transform-origin: center center;
+  transition: transform 0.25s linear;
+  z-index: 10;
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #ffd700;
+  border-radius: 50%;
+  animation: pointerPulse 1.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+  z-index: 1;
+}
+
+@keyframes pointerPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
   }
 }
 

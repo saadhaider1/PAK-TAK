@@ -178,21 +178,29 @@
         </div>
       </section>
 
-      <!-- Right Panel: Targets & Analysis -->
+      <!-- Right Panel: Navigation Vector & Analysis -->
       <aside class="side-panel right">
         <div class="panel-header">
-          <h2>Target Intel</h2>
+          <h2>Tactical Vector</h2>
         </div>
         <div class="panel-content">
-          <div class="target-list">
-            <div class="target-card" *ngFor="let target of targets" (click)="selectTarget(target)">
-              <div class="target-header">
-                <span class="id">{{ target.id }}</span>
-                <span class="type">{{ target.type }}</span>
+          <!-- Vector Calculations (Bearing and Total Distance) -->
+          <div class="vector-panel">
+            <div class="vector-card">
+              <div class="vector-header">
+                <span class="vector-title">START-TO-TARGET VECTOR</span>
               </div>
-              <div class="target-body">
-                <div class="coord">{{ target.coord }}</div>
-                <div class="status" [class.alert]="target.status === 'IN TRANSIT'">{{ target.status }}</div>
+              <div class="vector-body">
+                <div class="vector-metric-row">
+                  <div class="vector-metric">
+                    <span class="metric-label">DIRECT BEARING</span>
+                    <span class="metric-value highlighting">{{ bearingValue() }}</span>
+                  </div>
+                  <div class="vector-metric">
+                    <span class="metric-label">TOTAL RANGE (DIRECT)</span>
+                    <span class="metric-value highlighting">{{ directDistanceValue() }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -218,8 +226,13 @@
           <div class="waypoint-list-panel" *ngIf="waypoints().length > 0">
             <h3>Waypoints</h3>
             <div class="waypoint-item" *ngFor="let wp of waypoints(); let idx = index">
-              <span class="waypoint-name">{{ wp.id }}</span>
-              <span class="waypoint-coord">{{ wp.lat.toFixed(4) }}, {{ wp.lng.toFixed(4) }}</span>
+              <div class="waypoint-info">
+                <div class="waypoint-meta">
+                  <span class="waypoint-name">{{ wp.id }}</span>
+                  <span class="waypoint-coord">{{ wp.lat.toFixed(4) }}, {{ wp.lng.toFixed(4) }}</span>
+                </div>
+                <span class="waypoint-dist">Range from Start: <strong>{{ getDistanceFromStart(wp.lat, wp.lng) }}</strong></span>
+              </div>
               <button class="remove-wp-btn" (click)="removeWaypoint(idx)">REMOVE</button>
             </div>
           </div>

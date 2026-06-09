@@ -54,6 +54,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   
   public map!: L.Map;
   public currentTileLayer?: L.TileLayer;
+  public currentLabelLayer?: L.TileLayer;
   public startMarker?: L.Marker;
   public endMarker?: L.Marker;
   public routes: L.Polyline[] = [];
@@ -82,6 +83,9 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   public selectedRouteCoordinates: L.LatLng[] = [];
   public hasOfflineMap = signal(false);
 
+  public bearingValue = signal<string>('--');
+  public directDistanceValue = signal<string>('--');
+
   public hasStartAndEnd(): boolean {
     return !!this.startMarker && !!this.endMarker;
   }
@@ -96,12 +100,6 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     ]
   };
 
-  public targets = [
-    { id: 'T-01', type: 'STRUCTURE', coord: '33.6922° N, 73.0537° E', lat: 33.6922, lng: 73.0537, status: 'IDENTIFIED' },
-    { id: 'T-02', type: 'VEHICLE', coord: '33.7015° N, 73.0640° E', lat: 33.7015, lng: 73.0640, status: 'IN TRANSIT' },
-    { id: 'T-03', type: 'PERSONNEL', coord: '33.6818° N, 73.0330° E', lat: 33.6818, lng: 73.0330, status: 'UNKNOWN' },
-  ];
-
   public terrainAnalysis = signal({
     forestDensity: 'Scanning...',
     elevationGain: '--',
@@ -109,6 +107,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
   });
 
   private timeInterval: any;
+  private simulationInterval: any;
   private watchId?: number;
   private journeyWatchId?: number;
 
@@ -231,6 +230,7 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnDestroy() {
     if (this.timeInterval) clearInterval(this.timeInterval);
+    if (this.simulationInterval) clearInterval(this.simulationInterval);
     if (this.watchId !== undefined) navigator.geolocation.clearWatch(this.watchId);
     if (this.map) this.map.remove();
   }
@@ -246,9 +246,20 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
       if (this.currentTileLayer) {
         this.map.removeLayer(this.currentTileLayer);
       }
+      if (this.currentLabelLayer) {
+        this.map.removeLayer(this.currentLabelLayer);
+        this.currentLabelLayer = undefined;
+      }
+      
       if (mode === 'SATELLITE') {
         this.currentTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
           attribution: 'Tiles &copy; Esri',
+          maxZoom: 18
+        }).addTo(this.map);
+
+        // Add transparent boundaries & place name labels overlay
+        this.currentLabelLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Labels &copy; Esri',
           maxZoom: 18
         }).addTo(this.map);
       } else if (mode === 'NIGHT') {
@@ -325,6 +336,8 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
           this.currentLng.set(offlineData.startPoint.lng.toFixed(4) + '° E');
           this.targetLat.set(offlineData.hitPoint.lat.toFixed(4) + '° N');
           this.targetLng.set(offlineData.hitPoint.lng.toFixed(4) + '° E');
+
+          this.updateBearingAndDistance();
 
           // Restore routes if present
           if (offlineData.routes && offlineData.routes.length > 0) {
@@ -535,6 +548,17 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     this.createWaypointMarker(waypoint);
   }
 
+  getDistanceFromStart(lat: number, lng: number): string {
+    if (this.startMarker) {
+      const start = this.startMarker.getLatLng();
+      const wpLatLng = L.latLng(lat, lng);
+      const distanceMeters = start.distanceTo(wpLatLng);
+      const distanceKm = distanceMeters / 1000;
+      return `${distanceKm.toFixed(2)} km`;
+    }
+    return '--';
+  }
+
   redrawWaypoints() {
     this.waypointsLayer.clearLayers();
     if (!this.waypointsVisible) {
@@ -597,57 +621,113 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     return new L.LatLng(midLat + normY * offset * direction, midLng + normX * offset * direction);
   }
 
+  flattenLatLngs(latlngs: any): L.LatLng[] {
+    if (!latlngs) return [];
+    if (latlngs instanceof L.LatLng) return [latlngs];
+    if (Array.isArray(latlngs)) {
+      if (latlngs.length === 0) return [];
+      if (latlngs[0] instanceof L.LatLng) {
+        return latlngs as L.LatLng[];
+      }
+      return latlngs.reduce((acc, val) => acc.concat(this.flattenLatLngs(val)), []);
+    }
+    return [];
+  }
+
   updateSelectedRouteCoordinates() {
     const selectedIndex = this.selectedRouteIndex();
     const selectedRoute = this.routes[selectedIndex];
     if (selectedRoute) {
-      this.selectedRouteCoordinates = selectedRoute.getLatLngs() as L.LatLng[];
+      this.selectedRouteCoordinates = this.flattenLatLngs(selectedRoute.getLatLngs());
     } else {
       this.selectedRouteCoordinates = [];
     }
   }
 
+  getRotationAngle(start: L.LatLng, end: L.LatLng): number {
+    const lat1 = start.lat * Math.PI / 180;
+    const lat2 = end.lat * Math.PI / 180;
+    const lon1 = start.lng * Math.PI / 180;
+    const lon2 = end.lng * Math.PI / 180;
+    const dLon = lon2 - lon1;
+    const y = Math.sin(dLon) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+    let brng = Math.atan2(y, x) * 180 / Math.PI;
+    return (brng + 360) % 360;
+  }
+
   startJourney() {
-    if (!navigator.geolocation) {
-      this.systemStatusMsg.set('ERROR: GPS UNAVAILABLE. REAL-TIME JOURNEY CANNOT START.');
-      return;
-    }
     if (this.journeyActive()) {
       return;
     }
+
+    if (!navigator.geolocation) {
+      this.systemStatusMsg.set('ERROR: GPS UNAVAILABLE. REAL-TIME NAVIGATION CANNOT START.');
+      return;
+    }
+
     this.journeyActive.set(true);
-    this.systemStatusMsg.set('JOURNEY STARTED: TRACKING LIVE OPERATIVE MOVEMENT');
-    if (this.currentLatNum && this.currentLngNum) {
-      this.updateJourneyPointer(new L.LatLng(this.currentLatNum, this.currentLngNum));
+    this.systemStatusMsg.set('TACTICAL REAL-TIME NAVIGATION ACTIVE: MONITORING PHYSICAL MOVEMENT...');
+
+    let lastLatLng: L.LatLng | undefined = undefined;
+    if (this.currentLatNum && this.currentLngNum && this.currentLatNum !== 0) {
+      lastLatLng = new L.LatLng(this.currentLatNum, this.currentLngNum);
+      this.updateJourneyPointer(lastLatLng);
     }
 
     this.journeyWatchId = navigator.geolocation.watchPosition((position) => {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
       const latlng = new L.LatLng(lat, lng);
+      
       this.updateCurrentPosition(lat, lng, true);
-      this.updateJourneyPointer(latlng);
+
+      // Rotate pointer based on real movement heading
+      this.updateJourneyPointer(latlng, lastLatLng);
+      
+      // Update starting point to user current location in real-time
       if (this.startMarker) {
         this.startMarker.setLatLng(latlng);
         this.updateRoute();
       }
+
+      lastLatLng = latlng;
     }, (error) => {
       console.error("Journey geolocation error:", error);
       this.gpsStatus.set('ERROR');
-      this.systemStatusMsg.set('ERROR: LIVE JOURNEY GPS TRACKING FAILED');
+      this.systemStatusMsg.set('ERROR: LIVE GPS NAVIGATION UPLINK FAILED');
       this.stopJourney();
-    }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+    }, { 
+      enableHighAccuracy: true, 
+      maximumAge: 1000, 
+      timeout: 15000 
+    });
   }
 
-  updateJourneyPointer(latlng: L.LatLng) {
+  updateJourneyPointer(latlng: L.LatLng, lastLatlng?: L.LatLng) {
     if (!this.map) {
       return;
     }
+
+    let angle = 0;
+    if (lastLatlng) {
+      angle = this.getRotationAngle(lastLatlng, latlng);
+    }
+
+    const journeyIcon = L.divIcon({
+      className: 'tactical-journey-pointer-container',
+      html: `<div class="pulsing-pointer"><div class="pointer-arrow" style="transform: rotate(${angle}deg)">▲</div><div class="pulse-ring"></div></div>`,
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    });
+
     if (!this.journeyMarker) {
-      this.journeyMarker = L.marker(latlng, { icon: startIcon }).addTo(this.map).bindPopup('LIVE OPERATIVE POSITION').openPopup();
+      this.journeyMarker = L.marker(latlng, { icon: journeyIcon }).addTo(this.map).bindPopup('TACTICAL JOURNEY VECTOR').openPopup();
     } else {
       this.journeyMarker.setLatLng(latlng);
+      this.journeyMarker.setIcon(journeyIcon);
     }
+
     if (!this.journeyPath) {
       this.journeyPath = L.polyline([latlng], {
         color: '#ffd700',
@@ -662,13 +742,17 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
         this.journeyPath.setLatLngs(path);
       }
     }
-    this.map.panTo(latlng, { animate: true, duration: 0.7 });
+    this.map.panTo(latlng, { animate: true, duration: 0.3 });
   }
 
   stopJourney() {
     if (this.journeyWatchId !== undefined) {
       navigator.geolocation.clearWatch(this.journeyWatchId);
       this.journeyWatchId = undefined;
+    }
+    if (this.simulationInterval) {
+      clearInterval(this.simulationInterval);
+      this.simulationInterval = undefined;
     }
     this.journeyActive.set(false);
     if (this.journeyMarker) {
@@ -841,7 +925,41 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     this.updateRoute();
   }
 
+  updateBearingAndDistance() {
+    if (this.startMarker && this.endMarker) {
+      const start = this.startMarker.getLatLng();
+      const end = this.endMarker.getLatLng();
+
+      const lat1 = start.lat * Math.PI / 180;
+      const lat2 = end.lat * Math.PI / 180;
+      const lon1 = start.lng * Math.PI / 180;
+      const lon2 = end.lng * Math.PI / 180;
+
+      const dLon = lon2 - lon1;
+
+      const y = Math.sin(dLon) * Math.cos(lat2);
+      const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+
+      let brng = Math.atan2(y, x) * 180 / Math.PI;
+      brng = (brng + 360) % 360;
+
+      const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+      const idx = Math.round(brng / 22.5) % 16;
+      const cardinal = directions[idx];
+
+      this.bearingValue.set(`${brng.toFixed(1)}° (${cardinal})`);
+
+      const distMeters = start.distanceTo(end);
+      const distKm = distMeters / 1000;
+      this.directDistanceValue.set(`${distKm.toFixed(2)} km`);
+    } else {
+      this.bearingValue.set('--');
+      this.directDistanceValue.set('--');
+    }
+  }
+
   updateRoute() {
+    this.updateBearingAndDistance();
     if (this.startMarker && this.endMarker) {
       const start = this.startMarker.getLatLng();
       const end = this.endMarker.getLatLng();
@@ -1287,10 +1405,5 @@ export class App implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  selectTarget(target: any) {
-    const latlng = new L.LatLng(target.lat, target.lng);
-    this.map.setView(latlng, 15);
-    this.setEndpoint(latlng);
-  }
 
 }
