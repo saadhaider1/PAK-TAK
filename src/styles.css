@@ -1,0 +1,247 @@
+:root {
+  --military-olive: #556b2f;
+  --military-olive-dark: #3a4a20;
+  --military-olive-light: #8b9d77;
+  --bg-black: #0a0a0a;
+  --bg-dark-gray: #151515;
+  --bg-panel: rgba(20, 20, 20, 0.9);
+  --text-primary: #dcdcdc;
+  --text-secondary: #a0a0a0;
+  --accent-green: #9acd32;
+  --border-color: rgba(85, 107, 47, 0.4);
+  --hazard-yellow: #ffd700;
+  --glow-olive: 0 0 10px rgba(85, 107, 47, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-black);
+  color: var(--text-primary);
+  font-family: 'Roboto Mono', monospace;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+h1, h2, h3, .brand {
+  font-family: 'Orbitron', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.scanline {
+  width: 100%;
+  height: 100px;
+  z-index: 9999;
+  background: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(85, 107, 47, 0.05) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  opacity: 0.1;
+  position: absolute;
+  bottom: 100%;
+  animation: scanline 10s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanline {
+  0% { bottom: 100%; }
+  100% { bottom: -100px; }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--military-olive);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--military-olive-light);
+}
+
+/*
+ * Map marker styles MUST live in the global stylesheet. Markers are created in
+ * TypeScript via document.createElement and appended by MapLibre outside the
+ * Angular component template, so component-scoped (emulated) styles never match
+ * them. Keeping these global guarantees the START and HIT markers are visible.
+ */
+.map-marker {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #000;
+}
+
+.map-marker--start {
+  background: #9acd32;
+}
+
+.map-marker--end {
+  width: 34px;
+  height: 34px;
+  background: #ff1a1a;
+  border: 4px solid #fff;
+  box-shadow: 0 0 16px rgba(255, 26, 26, 1), 0 0 4px rgba(0, 0, 0, 0.7);
+  z-index: 20;
+  animation: target-pulse 1.5s ease-out infinite;
+}
+
+.map-marker--end::before,
+.map-marker--end::after {
+  content: '';
+  position: absolute;
+  background: #fff;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+.map-marker--end::before {
+  width: 3px;
+  height: 26px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.map-marker--end::after {
+  width: 26px;
+  height: 3px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes target-pulse {
+  0% {
+    box-shadow: 0 0 16px rgba(255, 26, 26, 1), 0 0 0 0 rgba(255, 26, 26, 0.8);
+  }
+  70% {
+    box-shadow: 0 0 16px rgba(255, 26, 26, 1), 0 0 0 20px rgba(255, 26, 26, 0);
+  }
+  100% {
+    box-shadow: 0 0 16px rgba(255, 26, 26, 1), 0 0 0 0 rgba(255, 26, 26, 0);
+  }
+}
+
+.map-marker--waypoint {
+  background: #ffd700;
+}
+
+.map-marker--journey {
+  background: transparent;
+  border: none;
+  color: #ffd700;
+  font-size: 1.2rem;
+}
+
+.map-marker--sos {
+  background: transparent;
+  border: none;
+}
+
+/*
+ * MapLibre popups are appended outside the Angular component template, so their
+ * styling must be global. Force a high-contrast dark panel with light text so
+ * terrain (forest/water) details are clearly readable.
+ */
+.maplibregl-popup-content {
+  background: rgba(12, 14, 10, 0.96) !important;
+  color: #f0f0f0 !important;
+  border: 1px solid var(--military-olive);
+  border-radius: 6px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+  padding: 12px 14px !important;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.maplibregl-popup-content b {
+  color: #ffffff;
+}
+
+.maplibregl-popup-close-button {
+  color: #cfcfcf !important;
+  font-size: 18px !important;
+  padding: 2px 8px !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: #fff !important;
+  background: transparent !important;
+}
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: rgba(12, 14, 10, 0.96) !important;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: rgba(12, 14, 10, 0.96) !important;
+}
+
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: rgba(12, 14, 10, 0.96) !important;
+}
+
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: rgba(12, 14, 10, 0.96) !important;
+}
+
+/* Terrain detail popup layout: each field on its own line, label + value rows. */
+.terrain-popup__title {
+  display: block;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 1px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.terrain-popup__divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 0 0 8px;
+}
+
+.terrain-popup__row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.terrain-popup__label {
+  flex: 0 0 92px;
+  color: #9fb07e;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.terrain-popup__value {
+  flex: 1;
+  color: #ffffff;
+  word-break: break-word;
+}
